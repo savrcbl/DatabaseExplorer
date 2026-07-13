@@ -3,7 +3,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using DatabaseExplorer.Core.Models;
 using GalaSoft.MvvmLight;
 
-namespace DatabaseE
+namespace DatabaseExplorer.ViewModels;
+
 public sealed partial class TreeNodeViewModel : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
     public TreeNodeViewModel(string name, DatabaseObjectType nodeType, TreeNodeViewModel? parent = null, object? tag = null)
