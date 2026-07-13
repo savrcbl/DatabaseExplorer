@@ -13,6 +13,7 @@
     <Folder Include="Core\Interfaces\" />
     <Folder Include="DataProviders\PostgreSql\" />
     <Folder Include="DataProviders\SqlServer\" />
+    <Folder Include="Database\" />
   </ItemGroup>
 
 </Project>
