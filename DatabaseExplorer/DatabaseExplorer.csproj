@@ -11,9 +11,9 @@
   <ItemGroup>
     <Folder Include="Core\Exceptions\" />
     <Folder Include="Core\Interfaces\" />
+    <Folder Include="ViewModels\" />
     <Folder Include="DataProviders\PostgreSql\" />
     <Folder Include="DataProviders\SqlServer\" />
-    <Folder Include="Database\" />
   </ItemGroup>
 
 </Project>
