@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DatabaseExplorer.Core.Models;
+using GalaSoft.MvvmLight;
 
 namespace DatabaseExplorer.ViewModels;
 
@@ -10,7 +11,7 @@ namespace DatabaseExplorer.ViewModels;
 /// or procedure). <see cref="Tag"/> carries the underlying model for leaf nodes so the
 /// owning view model can react to selection without re-parsing display text.
 /// </summary>
-public sealed partial class TreeNodeViewModel : ObservableObject
+public sealed partial class TreeNodeViewModel : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
     public TreeNodeViewModel(string name, DatabaseObjectType nodeType, TreeNodeViewModel? parent = null, object? tag = null)
     {
