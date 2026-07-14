@@ -1,22 +1,50 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
+using DatabaseExplorer.Core.Interfaces;
+using DatabaseExplorer.Helpers;
 using DatabaseExplorer.ViewModels;
 
 namespace DatabaseExplorer.Views;
 
 /// <summary>
-/// Code-behind for the main window. Deliberately thin: the two handlers here exist only
+/// Code-behind for the main window. Deliberately thin: most handlers here exist only
 /// because plain WPF does not expose <see cref="TreeView.SelectedItem"/> as a two-way
-/// bindable property and because a single toolbar button opens a small format-choice
-/// menu rather than navigating anywhere. All real logic lives in <see cref="MainViewModel"/>.
+/// bindable property, because a single toolbar button opens a small format-choice menu,
+/// and because matching the native title bar to the current theme requires a Win32 call
+/// that has no WPF/XAML equivalent. All real application logic lives in
+/// <see cref="MainViewModel"/>.
 /// </summary>
 public partial class MainWindow : Window
 {
-    public MainWindow(MainViewModel viewModel)
+    private readonly IThemeService _themeService;
+
+    public MainWindow(MainViewModel viewModel, IThemeService themeService)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _themeService = themeService;
+
+        // WPF's native window chrome does not automatically follow the OS light/dark
+        // theme the way its own content can via resource dictionaries — that requires
+        // an explicit DWM call once the window's handle exists, and again whenever the
+        // theme changes afterwards.
+        SourceInitialized += OnSourceInitialized;
+        _themeService.ThemeChanged += OnThemeChanged;
+
         Closing += OnClosing;
+    }
+
+    private void OnSourceInitialized(object? sender, EventArgs e) =>
+        ApplyTitleBarTheme(_themeService.CurrentTheme);
+
+    private void OnThemeChanged(object? sender, AppTheme theme) =>
+        ApplyTitleBarTheme(theme);
+
+    private void ApplyTitleBarTheme(AppTheme theme)
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        NativeThemeMethods.SetImmersiveDarkMode(hwnd, theme == AppTheme.Dark);
     }
 
     private void ObjectTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -38,6 +66,8 @@ public partial class MainWindow : Window
 
     private async void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        _themeService.ThemeChanged -= OnThemeChanged;
+
         if (DataContext is MainViewModel viewModel)
         {
             await viewModel.DisposeAsync().ConfigureAwait(true);
