@@ -717,7 +717,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
         if (_connection is not null)
         {
-            await _connection.DisposeAsync().ConfigureAwait(false);
+            await _connection.DisposeAsync().ConfigureAwait(false); 
             _connection = null;
         }
     }

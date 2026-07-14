@@ -32,8 +32,8 @@
     <SolidColorBrush x:Key="SelectionBrush" Color="#243A35" />
 
     <!-- Secondary controls -->
-    <SolidColorBrush x:Key="ButtonSecondaryBackgroundBrush" Color="#22262E" />
-    <SolidColorBrush x:Key="ButtonSecondaryHoverBrush" Color="#2B3038" />
+    <SolidColorBrush x:Key="ButtonSecondaryBackgroundBrush" Color="#2A2F38" />
+    <SolidColorBrush x:Key="ButtonSecondaryHoverBrush" Color="#343A44" />
     <SolidColorBrush x:Key="ButtonSecondaryPressedBrush" Color="#3A4048" />
 
     <!-- Status -->
