@@ -1,0 +1,318 @@
+<Window x:Class="DatabaseExplorer.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DatabaseExplorer.ViewModels"
+        xmlns:controls="clr-namespace:DatabaseExplorer.Controls"
+        mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="Database Explorer"
+        Width="1440" Height="880"
+        MinWidth="1040" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        FontFamily="{DynamicResource AppFontFamily}"
+        TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True">
+
+    <Window.Resources>
+        <!-- Small type badge used in the object tree; text is set per node type below. -->
+        <Style x:Key="NodeBadgeBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource AccentMutedBrush}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="4,1" />
+            <Setter Property="MinWidth" Value="20" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style x:Key="NodeBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+
+        <HierarchicalDataTemplate DataType="{x:Type vm:TreeNodeViewModel}" ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal">
+                <Border Style="{StaticResource NodeBadgeBorderStyle}">
+                    <TextBlock x:Name="BadgeText" Style="{StaticResource NodeBadgeTextStyle}" Text="?" />
+                </Border>
+                <TextBlock Text="{Binding Name}"
+                           Margin="8,0,0,0"
+                           VerticalAlignment="Center"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <HierarchicalDataTemplate.Triggers>
+                <DataTrigger Binding="{Binding NodeType}" Value="Database">
+                    <Setter TargetName="BadgeText" Property="Text" Value="DB" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="Schema">
+                    <Setter TargetName="BadgeText" Property="Text" Value="SCH" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="TablesFolder">
+                    <Setter TargetName="BadgeText" Property="Text" Value="TBLS" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="ViewsFolder">
+                    <Setter TargetName="BadgeText" Property="Text" Value="VWS" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="ProceduresFolder">
+                    <Setter TargetName="BadgeText" Property="Text" Value="PROC" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="Table">
+                    <Setter TargetName="BadgeText" Property="Text" Value="TBL" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="View">
+                    <Setter TargetName="BadgeText" Property="Text" Value="VW" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding NodeType}" Value="Procedure">
+                    <Setter TargetName="BadgeText" Property="Text" Value="PRC" />
+                </DataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
+
+        <Style x:Key="TreeViewItemContainerStyle" TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ================= Body: nav panel | splitter | main content ================= -->
+        <Grid Grid.Row="0" Margin="16,16,16,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="NavColumn" Width="320" MinWidth="260" MaxWidth="480" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ===================== Left navigation panel ===================== -->
+            <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Database Explorer" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,16" />
+
+                    <TextBlock Grid.Row="1" Text="PROVIDER" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,0,0,6" />
+                    <ComboBox Grid.Row="1" Margin="0,20,0,0"
+                              ItemsSource="{Binding AvailableProviders}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="Type"
+                              SelectedValue="{Binding SelectedProviderType}"
+                              IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}" />
+
+                    <TextBlock Grid.Row="2" Text="CONNECTION STRING" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBox Grid.Row="2" Margin="0,42,0,0"
+                             Style="{StaticResource WatermarkTextBoxStyle}"
+                             Text="{Binding ConnectionString, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="{Binding ConnectionStringPlaceholder}"
+                             IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                             AcceptsReturn="False"
+                             TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Disabled" />
+
+                    <Grid Grid.Row="3" Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Connect" Style="{StaticResource PrimaryButtonStyle}"
+                                Margin="0,0,4,0"
+                                Command="{Binding ConnectCommand}" />
+                        <Button Grid.Column="1" Content="Disconnect" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="4,0,0,0"
+                                Command="{Binding DisconnectCommand}" />
+                    </Grid>
+
+                    <Grid Grid.Row="4" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Reload" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,4,0"
+                                Command="{Binding ReloadCommand}" />
+                        <Button Grid.Column="1" Content="Start Scanning" Style="{StaticResource PrimaryButtonStyle}"
+                                Margin="4,0,0,0"
+                                Command="{Binding StartScanCommand}" />
+                    </Grid>
+
+                    <ProgressBar Grid.Row="5" Margin="0,14,0,0" IsIndeterminate="True"
+                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                    <Border Grid.Row="6" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,10" />
+
+                    <TextBlock Grid.Row="6" Text="DATABASE OBJECTS" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,20,0,6" />
+
+                    <TreeView Grid.Row="7" Margin="0,8,0,0"
+                              x:Name="ObjectTree"
+                              ItemsSource="{Binding TreeNodes}"
+                              ItemContainerStyle="{StaticResource TreeViewItemContainerStyle}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              SelectedItemChanged="ObjectTree_SelectedItemChanged"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling"
+                              ScrollViewer.CanContentScroll="True">
+                        <TreeView.Template>
+                            <ControlTemplate TargetType="TreeView">
+                                <ScrollViewer Background="Transparent" BorderThickness="0" CanContentScroll="True">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </TreeView.Template>
+                    </TreeView>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" />
+
+            <!-- ===================== Main content ===================== -->
+            <Grid Grid.Column="2" Margin="8,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Toolbar -->
+                <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10" Margin="0,0,0,8">
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Content="Reload" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding ReloadCommand}" />
+
+                        <Button x:Name="ExportButton" Content="Export" Style="{StaticResource ToolbarButtonStyle}" Click="ExportButton_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu Placement="Bottom">
+                                    <MenuItem Header="Export to CSV..." Command="{Binding ExportCommand}" CommandParameter="csv" />
+                                    <MenuItem Header="Export to Excel (.xlsx)..." Command="{Binding ExportCommand}" CommandParameter="excel" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button Content="Refresh" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding RefreshCurrentObjectCommand}" />
+
+                        <Separator />
+
+                        <Button Content="Copy Cell" Style="{StaticResource ToolbarButtonStyle}"
+                                Command="{Binding CopyCellCommand}" CommandParameter="{Binding ElementName=ResultsGrid}" />
+                        <Button Content="Copy Row" Style="{StaticResource ToolbarButtonStyle}"
+                                Command="{Binding CopyRowCommand}" CommandParameter="{Binding ElementName=ResultsGrid}" />
+                        <Button Content="Copy Table" Style="{StaticResource ToolbarButtonStyle}"
+                                Command="{Binding CopyTableCommand}" CommandParameter="{Binding ElementName=ResultsGrid}" />
+
+                        <Separator />
+
+                        <Button Content="Clear" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding ClearCommand}" />
+                        <Button Content="Disconnect" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding DisconnectCommand}" />
+                    </WrapPanel>
+                </Border>
+
+                <!-- Quick filter -->
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                             Style="{StaticResource WatermarkTextBoxStyle}"
+                             Tag="Filter rows across all columns..."
+                             Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding CurrentDataView, Converter={StaticResource NullToBooleanConverter}}" />
+                    <TextBlock Grid.Column="1" Margin="12,0,4,0" VerticalAlignment="Center"
+                               Style="{StaticResource CaptionTextStyle}"
+                               Text="{Binding TotalRowCount, StringFormat='{}{0:N0} row(s)'}" />
+                </Grid>
+
+                <!-- Data grid / empty state -->
+                <Grid Grid.Row="2">
+                    <DataGrid x:Name="ResultsGrid"
+                              ItemsSource="{Binding CurrentDataView}"
+                              Visibility="{Binding CurrentDataView, Converter={StaticResource NullToVisibilityConverter}}" />
+
+                    <Border Style="{StaticResource CardBorderStyle}"
+                            Visibility="{Binding CurrentDataView, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=Invert}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360">
+                            <TextBlock Text="No data loaded" Style="{StaticResource TitleTextStyle}" HorizontalAlignment="Center" />
+                            <TextBlock Text="Connect to a database, scan its objects, and select a table or view to browse its data here."
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <controls:BusyOverlay IsBusy="{Binding IsBusy}" Message="{Binding StatusMessage}" />
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- ================= Status bar ================= -->
+        <StatusBar Grid.Row="1" Margin="16,0,16,16">
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                             Fill="{Binding ConnectionState, Converter={StaticResource ConnectionStateToBrushConverter}}" />
+                    <TextBlock Margin="6,0,0,0" Text="{Binding ConnectionState}" />
+                </StackPanel>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="Provider: " Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <Run Text="{Binding ConnectedProviderDisplayName, TargetNullValue='—', Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="Server: " Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <Run Text="{Binding ConnectedServerName, TargetNullValue='—', Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="Database: " Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <Run Text="{Binding ConnectedDatabaseName, TargetNullValue='—', Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="Object: " Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <Run Text="{Binding CurrentObjectName, TargetNullValue='—', Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="Rows: " Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <Run Text="{Binding TotalRowCount, StringFormat=N0, Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Text="{Binding ScanStatusText}" />
+            </StatusBarItem>
+            <StatusBarItem DockPanel.Dock="Right">
+                <TextBlock Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" MaxWidth="480" />
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

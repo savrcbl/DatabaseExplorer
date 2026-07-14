@@ -1,9 +1,11 @@
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using ClosedXML.Excel;
 using DatabaseExplorer.Core.Interfaces;
+using System.IO;
 
 namespace DatabaseExplorer.Services;
 
@@ -133,10 +135,7 @@ public sealed class ExportService : IExportService
             case DateTime dt:
                 cell.Value = dt;
                 break;
-            case sbyte or byte or short or ushort or int or uint or long or ulong:
-                cell.Value = Convert.ToInt64(value, CultureInfo.InvariantCulture);
-                break;
-            case float or double or decimal:
+            case sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal:
                 cell.Value = Convert.ToDouble(value, CultureInfo.InvariantCulture);
                 break;
             default:

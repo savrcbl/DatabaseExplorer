@@ -1,0 +1,56 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Light theme palette.
+        A deep teal accent was chosen deliberately for a data-tooling context — calm and
+        precise rather than the default Windows "action" blue, and distinct enough from
+        the app's neutral surfaces to draw the eye to primary actions and status states.
+    -->
+
+    <!-- Surfaces -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F6F7F9" />
+    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="PanelAltBackgroundBrush" Color="#F0F2F5" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayBrush" Color="#B3F6F7F9" />
+
+    <!-- Borders / dividers -->
+    <SolidColorBrush x:Key="BorderBrush1" Color="#E1E4E9" />
+    <SolidColorBrush x:Key="BorderBrush2" Color="#CBD0D8" />
+    <SolidColorBrush x:Key="DividerBrush" Color="#EBEDF0" />
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1B1F24" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#666E7A" />
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#9AA1AC" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#FFFFFF" />
+
+    <!-- Accent (primary actions, selection, focus) -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#2C6E5F" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#255C50" />
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#1D4A40" />
+    <SolidColorBrush x:Key="AccentMutedBrush" Color="#E4EFEC" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#DCEAE6" />
+
+    <!-- Secondary controls -->
+    <SolidColorBrush x:Key="ButtonSecondaryBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ButtonSecondaryHoverBrush" Color="#F0F2F5" />
+    <SolidColorBrush x:Key="ButtonSecondaryPressedBrush" Color="#E1E4E9" />
+
+    <!-- Status -->
+    <SolidColorBrush x:Key="StatusSuccessBrush" Color="#2E9E5B" />
+    <SolidColorBrush x:Key="StatusBusyBrush" Color="#D99A2B" />
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#D14F44" />
+    <SolidColorBrush x:Key="StatusIdleBrush" Color="#9AA1AC" />
+
+    <!-- DataGrid -->
+    <SolidColorBrush x:Key="GridHeaderBackgroundBrush" Color="#F0F2F5" />
+    <SolidColorBrush x:Key="GridRowAlternateBrush" Color="#FAFBFC" />
+    <SolidColorBrush x:Key="GridRowHoverBrush" Color="#F0F2F5" />
+    <SolidColorBrush x:Key="GridGridLineBrush" Color="#EBEDF0" />
+
+    <!-- Elevation -->
+    <Color x:Key="ShadowColor">#22000000</Color>
+
+</ResourceDictionary>

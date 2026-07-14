@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Dark theme palette. Mirrors Colors.Light.xaml's key set exactly so ThemeService can
+        hot-swap between the two without any other resource needing to change.
+    -->
+
+    <!-- Surfaces -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#15181D" />
+    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#1C2027" />
+    <SolidColorBrush x:Key="PanelAltBackgroundBrush" Color="#22262E" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#22262E" />
+    <SolidColorBrush x:Key="OverlayBrush" Color="#B315181D" />
+
+    <!-- Borders / dividers -->
+    <SolidColorBrush x:Key="BorderBrush1" Color="#2B3038" />
+    <SolidColorBrush x:Key="BorderBrush2" Color="#3A4048" />
+    <SolidColorBrush x:Key="DividerBrush" Color="#262B32" />
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E9EBEE" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9CA3AF" />
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6B7280" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#0B1210" />
+
+    <!-- Accent (primary actions, selection, focus) -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#4FB6A2" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#63C4B1" />
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#3D9885" />
+    <SolidColorBrush x:Key="AccentMutedBrush" Color="#1E2E2A" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#243A35" />
+
+    <!-- Secondary controls -->
+    <SolidColorBrush x:Key="ButtonSecondaryBackgroundBrush" Color="#22262E" />
+    <SolidColorBrush x:Key="ButtonSecondaryHoverBrush" Color="#2B3038" />
+    <SolidColorBrush x:Key="ButtonSecondaryPressedBrush" Color="#3A4048" />
+
+    <!-- Status -->
+    <SolidColorBrush x:Key="StatusSuccessBrush" Color="#4CC178" />
+    <SolidColorBrush x:Key="StatusBusyBrush" Color="#E8B84B" />
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#E5766B" />
+    <SolidColorBrush x:Key="StatusIdleBrush" Color="#6B7280" />
+
+    <!-- DataGrid -->
+    <SolidColorBrush x:Key="GridHeaderBackgroundBrush" Color="#22262E" />
+    <SolidColorBrush x:Key="GridRowAlternateBrush" Color="#1F232A" />
+    <SolidColorBrush x:Key="GridRowHoverBrush" Color="#262B32" />
+    <SolidColorBrush x:Key="GridGridLineBrush" Color="#262B32" />
+
+    <!-- Elevation -->
+    <Color x:Key="ShadowColor">#55000000</Color>
+
+</ResourceDictionary>

@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace DatabaseExplorer.Core.Models;
 
-namespace DatabaseExplorer.Core.Models
+/// <summary>
+/// Enumerates the database engines supported by the application.
+/// Adding a new engine starts with adding a new member here.
+/// </summary>
+public enum DatabaseProviderType
 {
-    public enum DatabaseProviderType
-    {
-        SqlServer, 
-        PostgreSql
-    }
+    /// <summary>Microsoft SQL Server (including Azure SQL).</summary>
+    SqlServer,
+
+    /// <summary>PostgreSQL.</summary>
+    PostgreSql
 }

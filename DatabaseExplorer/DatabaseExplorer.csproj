@@ -1,27 +1,35 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DatabaseExplorer</RootNamespace>
+    <AssemblyName>DatabaseExplorer</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <Platforms>AnyCPU;x64</Platforms>
+    <UseWindowsForms>false</UseWindowsForms>
+    <EnableDefaultApplicationDefinition>true</EnableDefaultApplicationDefinition>
+    <Company>Database Explorer</Company>
+    <Product>Database Explorer</Product>
+    <AssemblyTitle>Database Explorer</AssemblyTitle>
+    <Description>A modern, multi-engine database browsing and export tool.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Core\Exceptions\" />
-    <Folder Include="Core\Interfaces\" />
-    <Folder Include="ViewModels\" />
-    <Folder Include="DataProviders\PostgreSql\" />
-    <Folder Include="DataProviders\SqlServer\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
-    <PackageReference Include="MvvmLightLibs" Version="5.4.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="10.0.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
 
 </Project>

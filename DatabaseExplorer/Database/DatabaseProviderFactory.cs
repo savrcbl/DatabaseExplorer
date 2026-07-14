@@ -3,6 +3,11 @@ using DatabaseExplorer.Core.Models;
 
 namespace DatabaseExplorer.Database;
 
+/// <summary>
+/// Default <see cref="IDatabaseProviderFactory"/> implementation. Simply indexes whatever
+/// <see cref="IDatabaseProvider"/> instances were registered with the DI container, so
+/// supporting a new engine never requires touching this class.
+/// </summary>
 public sealed class DatabaseProviderFactory : IDatabaseProviderFactory
 {
     private readonly IReadOnlyList<IDatabaseProvider> _providers;

@@ -1,4 +1,6 @@
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using DatabaseExplorer.Core.Exceptions;
 using DatabaseExplorer.Core.Interfaces;
