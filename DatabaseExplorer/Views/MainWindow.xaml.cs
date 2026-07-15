@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -11,15 +12,15 @@ namespace DatabaseExplorer.Views;
 /// Code-behind for the main window. Deliberately thin: most handlers here exist only
 /// because plain WPF does not expose <see cref="TreeView.SelectedItem"/> as a two-way
 /// bindable property, because a single toolbar button opens a small format-choice menu,
-/// and because matching the native title bar to the current theme requires a Win32 call
-/// that has no WPF/XAML equivalent. All real application logic lives in
-/// <see cref="MainViewModel"/>.
+/// because matching the native title bar to the current theme requires a Win32 call
+/// that has no WPF/XAML equivalent, and because releasing the database connection on
+/// close needs to happen synchronously (see <see cref="OnClosing"/>). All real
+/// application logic lives in <see cref="MainViewModel"/>.
 /// </summary>
 public partial class MainWindow : Window
 {
     private readonly IThemeService _themeService;
-    private bool _cleanupStarted;
-    private bool _cleanupComplete;
+    private bool _closeHandled;
 
     public MainWindow(MainViewModel viewModel, IThemeService themeService)
     {
@@ -67,45 +68,46 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Ensures any open database connection is closed and disposed before the window is
-    /// actually allowed to close. <see cref="Window.Closing"/>'s handler can't simply be
-    /// awaited (WPF doesn't wait for an async void handler to finish), so the first
-    /// attempt is cancelled while cleanup runs in the background, and the window closes
-    /// itself for real once that cleanup completes.
+    /// Closes and releases the active database connection before the window is allowed
+    /// to close. WPF will not wait for an <c>async void</c> Closing handler to finish,
+    /// and — importantly — will throw if you cancel the close and later call
+    /// <see cref="Window.Close"/> again from that handler's continuation; the framework
+    /// treats the whole close attempt as still "in progress" until this handler's call
+    /// chain fully returns. So instead of cancelling and re-closing, cleanup runs
+    /// synchronously, in a single pass, via a brief blocking wait: the wait happens on a
+    /// background thread (via <see cref="Task.Run(Func{Task})"/>) and
+    /// <see cref="MainViewModel.DisposeAsync"/> uses <c>ConfigureAwait(false)</c>
+    /// throughout, so nothing in the chain needs the (blocked) UI thread to make
+    /// progress — there's no deadlock risk, just a short pause before the window closes.
+    /// A guard flag makes this idempotent in case Closing is ever raised more than once
+    /// for the same close (e.g. a rapid double-click on the title bar's close button).
     /// </summary>
-    private async void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (_cleanupComplete)
+        if (_closeHandled)
         {
-            // Cleanup already finished — this is the real close triggered below; let it through.
             return;
         }
 
-        e.Cancel = true;
-
-        if (_cleanupStarted)
-        {
-            // A previous close attempt already kicked off cleanup; nothing more to do
-            // here but wait for it to finish and call Close() again.
-            return;
-        }
-
-        _cleanupStarted = true;
-
-        if (DataContext is MainViewModel viewModel)
-        {
-            try
-            {
-                await viewModel.PrepareForShutdownAsync().ConfigureAwait(true);
-            }
-            finally
-            {
-                await viewModel.DisposeAsync().ConfigureAwait(true);
-            }
-        }
-
+        _closeHandled = true;
         _themeService.ThemeChanged -= OnThemeChanged;
-        _cleanupComplete = true;
-        Close();
+
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.IsBusy = true;
+        viewModel.StatusMessage = "Disconnecting before exit...";
+
+        try
+        {
+            Task.Run(() => viewModel.DisposeAsync().AsTask()).GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // A database that won't disconnect cleanly should never prevent the user
+            // from closing the app.
+        }
     }
 }

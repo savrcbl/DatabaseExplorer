@@ -713,41 +713,28 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
     // ----- Shutdown ------------------------------------------------------------------------
 
     /// <summary>
-    /// Gracefully closes the active database connection, if any, before the application
-    /// exits. Unlike <see cref="DisposeAsync"/>, this also drives <see cref="IsBusy"/> and
-    /// <see cref="StatusMessage"/> so the window can stay open and responsive for the brief
-    /// moment cleanup takes, rather than disappearing while a connection is still being
-    /// torn down. Safe to call even when nothing is connected.
+    /// Closes and disposes the active connection (if any) and releases pending-load
+    /// resources. Safe to call more than once — every step is null-guarded, and disposed
+    /// fields are set back to <c>null</c> immediately, so a repeat call (e.g. from a
+    /// second, redundant shutdown path) is a no-op rather than an
+    /// <see cref="ObjectDisposedException"/>. Every internal await uses
+    /// <c>ConfigureAwait(false)</c> deliberately — <see cref="Views.MainWindow"/> blocks
+    /// on this synchronously (via <c>Task.Run(...).GetAwaiter().GetResult()</c>) while
+    /// the window is closing, and a continuation that needed to marshal back to the UI
+    /// thread's <c>SynchronizationContext</c> at that point would deadlock. Swallows any
+    /// error from the close attempt itself — a database that doesn't acknowledge a clean
+    /// close should never prevent the app from shutting down or the resource from being
+    /// released.
     /// </summary>
-    public async Task PrepareForShutdownAsync()
+    public async ValueTask DisposeAsync()
     {
-        _selectionLoadCts?.Cancel();
-
-        if (_connection is null)
+        if (_selectionLoadCts is not null)
         {
-            return;
+            _selectionLoadCts.Cancel();
+            _selectionLoadCts.Dispose();
+            _selectionLoadCts = null;
         }
 
-        IsBusy = true;
-        StatusMessage = "Disconnecting before exit...";
-
-        try
-        {
-            await CloseAndDisposeConnectionAsync().ConfigureAwait(true);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    /// <summary>
-    /// Closes and disposes the active connection (if any), swallowing any error from the
-    /// close attempt itself — a database that doesn't acknowledge a clean close should
-    /// never prevent the app from shutting down or the resource from being released.
-    /// </summary>
-    private async Task CloseAndDisposeConnectionAsync()
-    {
         if (_connection is null)
         {
             return;
@@ -766,13 +753,5 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
             await _connection.DisposeAsync().ConfigureAwait(false);
             _connection = null;
         }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        _selectionLoadCts?.Cancel();
-        _selectionLoadCts?.Dispose();
-
-        await CloseAndDisposeConnectionAsync().ConfigureAwait(false);
     }
 }
