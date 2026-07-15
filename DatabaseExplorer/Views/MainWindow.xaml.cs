@@ -18,6 +18,8 @@ namespace DatabaseExplorer.Views;
 public partial class MainWindow : Window
 {
     private readonly IThemeService _themeService;
+    private bool _cleanupStarted;
+    private bool _cleanupComplete;
 
     public MainWindow(MainViewModel viewModel, IThemeService themeService)
     {
@@ -64,13 +66,46 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Ensures any open database connection is closed and disposed before the window is
+    /// actually allowed to close. <see cref="Window.Closing"/>'s handler can't simply be
+    /// awaited (WPF doesn't wait for an async void handler to finish), so the first
+    /// attempt is cancelled while cleanup runs in the background, and the window closes
+    /// itself for real once that cleanup completes.
+    /// </summary>
     private async void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        _themeService.ThemeChanged -= OnThemeChanged;
+        if (_cleanupComplete)
+        {
+            // Cleanup already finished — this is the real close triggered below; let it through.
+            return;
+        }
+
+        e.Cancel = true;
+
+        if (_cleanupStarted)
+        {
+            // A previous close attempt already kicked off cleanup; nothing more to do
+            // here but wait for it to finish and call Close() again.
+            return;
+        }
+
+        _cleanupStarted = true;
 
         if (DataContext is MainViewModel viewModel)
         {
-            await viewModel.DisposeAsync().ConfigureAwait(true);
+            try
+            {
+                await viewModel.PrepareForShutdownAsync().ConfigureAwait(true);
+            }
+            finally
+            {
+                await viewModel.DisposeAsync().ConfigureAwait(true);
+            }
         }
+
+        _themeService.ThemeChanged -= OnThemeChanged;
+        _cleanupComplete = true;
+        Close();
     }
 }

@@ -12,6 +12,11 @@ using DatabaseExplorer.Helpers;
 
 namespace DatabaseExplorer.ViewModels;
 
+/// <summary>
+/// The single view model backing <see cref="Views.MainWindow"/>. Owns the active
+/// database connection, the object tree, the currently displayed data, and every
+/// user-initiated command (connect, scan, reload, export, copy, ...).
+/// </summary>
 public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly IDatabaseProviderFactory _providerFactory;
@@ -137,6 +142,11 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private bool CanConnect() => !IsBusy && !IsConnected && !string.IsNullOrWhiteSpace(ConnectionString);
 
+    /// <summary>
+    /// Opens a new connection using the currently selected provider and connection
+    /// string. Returns true on success. Shared by both the Connect command and
+    /// Start Scanning (which connects first if not already connected).
+    /// </summary>
     private async Task<bool> ConnectInternalAsync(CancellationToken token)
     {
         var provider = _providerFactory.GetProvider(SelectedProviderType);
@@ -355,6 +365,12 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
     }
 
     // ----- Selection-driven data / metadata loading ---------------------------------------
+
+    /// <summary>
+    /// Loads the appropriate content for the newly-selected tree node: full row data for
+    /// tables and views, a lightweight metadata summary for procedures, and a navigational
+    /// status message (with the grid cleared) for schema/folder/database nodes.
+    /// </summary>
     private async Task LoadSelectedNodeDataAsync()
     {
         _selectionLoadCts?.Cancel();
@@ -430,6 +446,10 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Procedures do not have "rows" in the same sense as tables/views, so selecting one
+    /// displays its identity as metadata rather than attempting to execute it.
+    /// </summary>
     private async Task LoadProcedureMetadataAsync(TreeNodeViewModel node, CancellationToken token)
     {
         if (_connection is null || node.SchemaName is null)
@@ -592,6 +612,11 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private bool CanExport() => !IsBusy && CurrentDataView is not null;
 
+    // ----- Clipboard -----------------------------------------------------------------------
+    // These commands take the bound DataGrid itself as a parameter (via CommandParameter in
+    // XAML) since WPF's DataGrid does not expose its cell/row selection as bindable
+    // properties. This is a common, pragmatic exception to strict MVVM for grid clipboard
+    // operations.
 
     [RelayCommand(CanExecute = nameof(CanUseGrid))]
     private void CopyCell(DataGrid? grid)
@@ -685,15 +710,69 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
+    // ----- Shutdown ------------------------------------------------------------------------
+
+    /// <summary>
+    /// Gracefully closes the active database connection, if any, before the application
+    /// exits. Unlike <see cref="DisposeAsync"/>, this also drives <see cref="IsBusy"/> and
+    /// <see cref="StatusMessage"/> so the window can stay open and responsive for the brief
+    /// moment cleanup takes, rather than disappearing while a connection is still being
+    /// torn down. Safe to call even when nothing is connected.
+    /// </summary>
+    public async Task PrepareForShutdownAsync()
+    {
+        _selectionLoadCts?.Cancel();
+
+        if (_connection is null)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = "Disconnecting before exit...";
+
+        try
+        {
+            await CloseAndDisposeConnectionAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Closes and disposes the active connection (if any), swallowing any error from the
+    /// close attempt itself — a database that doesn't acknowledge a clean close should
+    /// never prevent the app from shutting down or the resource from being released.
+    /// </summary>
+    private async Task CloseAndDisposeConnectionAsync()
+    {
+        if (_connection is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _connection.CloseAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort close; we dispose regardless below.
+        }
+        finally
+        {
+            await _connection.DisposeAsync().ConfigureAwait(false);
+            _connection = null;
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         _selectionLoadCts?.Cancel();
         _selectionLoadCts?.Dispose();
 
-        if (_connection is not null)
-        {
-            await _connection.DisposeAsync().ConfigureAwait(false); 
-            _connection = null;
-        }
+        await CloseAndDisposeConnectionAsync().ConfigureAwait(false);
     }
 }
