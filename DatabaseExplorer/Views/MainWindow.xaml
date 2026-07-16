@@ -265,7 +265,7 @@
                         <Separator />
 
                         <Button Content="Copy Cell" Style="{StaticResource ToolbarButtonStyle}"
-                                Command="{Binding CopyCellCommand}" CommandParameter="{Binding ElementName=ResultsGrid}" Visibility="Collapsed"/>
+                                Command="{Binding CopyCellCommand}" CommandParameter="{Binding ElementName=ResultsGrid}" />
                         <Button Content="Copy Row" Style="{StaticResource ToolbarButtonStyle}"
                                 Command="{Binding CopyRowCommand}" CommandParameter="{Binding ElementName=ResultsGrid}" />
                         <Button Content="Copy Table" Style="{StaticResource ToolbarButtonStyle}"

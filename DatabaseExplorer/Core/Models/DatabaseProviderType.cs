@@ -10,5 +10,8 @@ public enum DatabaseProviderType
     SqlServer,
 
     /// <summary>PostgreSQL.</summary>
-    PostgreSql
+    PostgreSql,
+
+    /// <summary>SQLite — a single-file, serverless database engine.</summary>
+    Sqlite
 }

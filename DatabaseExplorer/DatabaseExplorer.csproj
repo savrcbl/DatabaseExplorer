@@ -27,9 +27,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.Win32.SystemEvents" Version="10.0.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
   </ItemGroup>
 
 </Project>

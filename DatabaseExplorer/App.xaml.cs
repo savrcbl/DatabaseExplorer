@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using DatabaseExplorer.Core.Interfaces;
 using DatabaseExplorer.Database;
 using DatabaseExplorer.DataProviders.PostgreSql;
+using DatabaseExplorer.DataProviders.Sqlite;
 using DatabaseExplorer.DataProviders.SqlServer;
 using DatabaseExplorer.Services;
 using DatabaseExplorer.ViewModels;
@@ -53,6 +54,7 @@ public partial class App : Application
         // IDatabaseQueryService implementations) — nothing else in the app changes.
         services.AddSingleton<IDatabaseProvider, SqlServerDatabaseProvider>();
         services.AddSingleton<IDatabaseProvider, PostgreSqlDatabaseProvider>();
+        services.AddSingleton<IDatabaseProvider, SqliteDatabaseProvider>();
         services.AddSingleton<IDatabaseProviderFactory, DatabaseProviderFactory>();
 
         // Cross-cutting application services.
