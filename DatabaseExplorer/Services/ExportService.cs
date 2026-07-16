@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Text;
 using ClosedXML.Excel;
 using DatabaseExplorer.Core.Interfaces;
+using System.IO;
 
 namespace DatabaseExplorer.Services;
 

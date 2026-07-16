@@ -59,6 +59,7 @@ public partial class App : Application
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IExportService, ExportService>();
+        services.AddSingleton<IConnectionProfileStore, ConnectionProfileStore>();
 
         // View models and views.
         services.AddTransient<MainViewModel>();
