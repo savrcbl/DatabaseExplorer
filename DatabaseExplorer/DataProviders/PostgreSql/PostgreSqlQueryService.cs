@@ -124,6 +124,7 @@ public sealed class PostgreSqlQueryService : IDatabaseQueryService
     public async Task<QueryResult> GetObjectDataAsync(
         string schema,
         string objectName,
+        int? rowLimit,
         IProgress<string>? progress,
         CancellationToken cancellationToken = default)
     {
@@ -132,12 +133,20 @@ public sealed class PostgreSqlQueryService : IDatabaseQueryService
 
         try
         {
-            progress?.Report($"Loading {qualifiedName}...");
+            progress?.Report(rowLimit is int limit
+                ? $"Loading first {limit:N0} row(s) of {qualifiedName}..."
+                : $"Loading {qualifiedName}...");
 
-            var sql = $"SELECT * FROM {QuoteIdentifier(schema)}.{QuoteIdentifier(objectName)};";
+            var limitClause = rowLimit is int ? " LIMIT @rowLimit" : string.Empty;
+            var sql = $"SELECT * FROM {QuoteIdentifier(schema)}.{QuoteIdentifier(objectName)}{limitClause};";
             using var command = _connection.CreateCommand();
             command.CommandText = sql;
             command.CommandTimeout = 120;
+
+            if (rowLimit is int limitValue)
+            {
+                command.Parameters.AddWithValue("rowLimit", limitValue);
+            }
 
             using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken)
                 .ConfigureAwait(false);
@@ -146,7 +155,7 @@ public sealed class PostgreSqlQueryService : IDatabaseQueryService
             table.Load(reader);
 
             stopwatch.Stop();
-            progress?.Report($"Loaded {table.Rows.Count:N0} rows from {qualifiedName}.");
+            progress?.Report($"Loaded {table.Rows.Count:N0} row(s) from {qualifiedName}.");
 
             return new QueryResult
             {
@@ -162,6 +171,63 @@ public sealed class PostgreSqlQueryService : IDatabaseQueryService
         catch (NpgsqlException ex)
         {
             throw new DatabaseQueryException($"Could not load data from '{qualifiedName}': {ex.Message}", ex);
+        }
+    }
+
+    public async Task<QueryResult> ExecuteQueryAsync(
+        string sql,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            progress?.Report("Running query...");
+
+            using var command = _connection.CreateCommand();
+            command.CommandText = sql;
+            command.CommandTimeout = 120;
+
+            using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken)
+                .ConfigureAwait(false);
+
+            var table = new DataTable("Result");
+
+            if (reader.FieldCount > 0)
+            {
+                table.Load(reader);
+            }
+            else
+            {
+                // The statement didn't return a result set (INSERT/UPDATE/DELETE/DDL) —
+                // surface the affected row count instead of an empty grid.
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    // Nothing to read for a non-query statement; drain defensively.
+                }
+
+                table.Columns.Add("RowsAffected", typeof(int));
+                table.Rows.Add(reader.RecordsAffected < 0 ? 0 : reader.RecordsAffected);
+            }
+
+            stopwatch.Stop();
+            progress?.Report($"Query completed — {table.Rows.Count:N0} row(s), {table.Columns.Count} column(s).");
+
+            return new QueryResult
+            {
+                Data = table,
+                SourceName = "(custom query)",
+                Elapsed = stopwatch.Elapsed
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (NpgsqlException ex)
+        {
+            throw new DatabaseQueryException($"Query failed: {ex.Message}", ex);
         }
     }
 

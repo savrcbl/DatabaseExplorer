@@ -22,15 +22,21 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly IDatabaseProviderFactory _providerFactory;
     private readonly IExportService _exportService;
     private readonly IDialogService _dialogService;
+    private readonly IConnectionProfileStore _profileStore;
 
     private IDatabaseConnection? _connection;
     private CancellationTokenSource? _selectionLoadCts;
 
-    public MainViewModel(IDatabaseProviderFactory providerFactory, IExportService exportService, IDialogService dialogService)
+    public MainViewModel(
+        IDatabaseProviderFactory providerFactory,
+        IExportService exportService,
+        IDialogService dialogService,
+        IConnectionProfileStore profileStore)
     {
         _providerFactory = providerFactory;
         _exportService = exportService;
         _dialogService = dialogService;
+        _profileStore = profileStore;
 
         foreach (var provider in providerFactory.GetAllProviders())
         {
@@ -38,6 +44,9 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
 
         _selectedProviderType = AvailableProviders.Count > 0 ? AvailableProviders[0].Type : DatabaseProviderType.SqlServer;
+        _selectedRowLimit = RowLimitOptions[1];
+
+        _ = LoadSavedConnectionsAsync();
     }
 
     // ----- Navigation panel state -----------------------------------------------------
@@ -57,6 +66,38 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     [ObservableProperty]
     private TreeNodeViewModel? _selectedNode;
+
+    // ----- Saved connections ------------------------------------------------------------
+
+    public ObservableCollection<SavedConnectionProfile> SavedConnections { get; } = [];
+
+    [ObservableProperty]
+    private SavedConnectionProfile? _selectedSavedConnection;
+
+    // ----- Query editor ------------------------------------------------------------------
+
+    [ObservableProperty]
+    private bool _isQueryEditorVisible;
+
+    [ObservableProperty]
+    private string _queryText = string.Empty;
+
+    // ----- Row limit / paging ------------------------------------------------------------
+
+    public ObservableCollection<RowLimitOption> RowLimitOptions { get; } =
+    [
+        new RowLimitOption("100 rows", 100),
+        new RowLimitOption("1,000 rows", 1000),
+        new RowLimitOption("5,000 rows", 5000),
+        new RowLimitOption("10,000 rows", 10000),
+        new RowLimitOption("No limit", null)
+    ];
+
+    [ObservableProperty]
+    private RowLimitOption _selectedRowLimit;
+
+    [ObservableProperty]
+    private int _loadedRowCount;
 
     // ----- Main content state ----------------------------------------------------------
 
@@ -99,12 +140,30 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         or AppConnectionState.Scanning
         or AppConnectionState.Ready;
 
+    /// <summary>
+    /// A friendly "N of M rows" summary for the status bar. Falls back to a plain count
+    /// when nothing is capped (or the total is unknown).
+    /// </summary>
+    public string RowsSummaryText => IsRowCountCapped
+        ? $"{LoadedRowCount:N0} of {TotalRowCount:N0} row(s)"
+        : $"{LoadedRowCount:N0} row(s)";
+
+    /// <summary>
+    /// True when the grid is showing fewer rows than the object actually contains,
+    /// because a row limit was applied. Drives the "Load All" banner and command.
+    /// </summary>
+    public bool IsRowCountCapped => LoadedRowCount > 0 && LoadedRowCount < TotalRowCount;
+
     // ----- Property change hooks (keep computed state & command availability in sync) --
 
     partial void OnSelectedProviderTypeChanged(DatabaseProviderType value) =>
         OnPropertyChanged(nameof(ConnectionStringPlaceholder));
 
-    partial void OnConnectionStringChanged(string value) => ConnectCommand.NotifyCanExecuteChanged();
+    partial void OnConnectionStringChanged(string value)
+    {
+        ConnectCommand.NotifyCanExecuteChanged();
+        SaveConnectionCommand.NotifyCanExecuteChanged();
+    }
 
     partial void OnIsBusyChanged(bool value) => RefreshCommandStates();
 
@@ -120,6 +179,38 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     partial void OnFilterTextChanged(string value) => ApplyFilter();
 
+    partial void OnQueryTextChanged(string value) => RunQueryCommand.NotifyCanExecuteChanged();
+
+    partial void OnLoadedRowCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(RowsSummaryText));
+        OnPropertyChanged(nameof(IsRowCountCapped));
+        LoadAllRowsCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnTotalRowCountChanged(long value)
+    {
+        OnPropertyChanged(nameof(RowsSummaryText));
+        OnPropertyChanged(nameof(IsRowCountCapped));
+        LoadAllRowsCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedSavedConnectionChanged(SavedConnectionProfile? value)
+    {
+        DeleteSavedConnectionCommand.NotifyCanExecuteChanged();
+
+        if (value is null)
+        {
+            return;
+        }
+
+        // Populate the provider/connection string fields so the user can review or
+        // tweak them before clicking Connect — selecting a saved profile does not
+        // connect automatically.
+        SelectedProviderType = value.ProviderType;
+        ConnectionString = value.ConnectionString;
+    }
+
     private void RefreshCommandStates()
     {
         OnPropertyChanged(nameof(IsConnected));
@@ -128,6 +219,9 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         StartScanCommand.NotifyCanExecuteChanged();
         ReloadCommand.NotifyCanExecuteChanged();
         RefreshCurrentObjectCommand.NotifyCanExecuteChanged();
+        SmartRefreshCommand.NotifyCanExecuteChanged();
+        RunQueryCommand.NotifyCanExecuteChanged();
+        LoadAllRowsCommand.NotifyCanExecuteChanged();
         ExportCommand.NotifyCanExecuteChanged();
         CopyCellCommand.NotifyCanExecuteChanged();
         CopyRowCommand.NotifyCanExecuteChanged();
@@ -218,6 +312,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
             CurrentDataView = null;
             CurrentObjectName = null;
             TotalRowCount = 0;
+            LoadedRowCount = 0;
             FilterText = string.Empty;
             ConnectedServerName = null;
             ConnectedDatabaseName = null;
@@ -418,7 +513,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
-    private async Task LoadObjectDataAsync(TreeNodeViewModel node, CancellationToken token)
+    private async Task LoadObjectDataAsync(TreeNodeViewModel node, CancellationToken token, bool ignoreRowLimit = false)
     {
         if (_connection is null || node.SchemaName is null)
         {
@@ -428,17 +523,37 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         IsBusy = true;
         try
         {
+            var effectiveLimit = ignoreRowLimit ? null : SelectedRowLimit.Value;
+
+            long actualTotal;
+            try
+            {
+                actualTotal = await _connection.QueryService
+                    .GetRowCountAsync(node.SchemaName, node.Name, token)
+                    .ConfigureAwait(true);
+            }
+            catch (DatabaseQueryException)
+            {
+                // Some providers/permission levels don't allow COUNT(*) even when SELECT
+                // is allowed. Fall back to "unknown total" rather than failing the load.
+                actualTotal = -1;
+            }
+
             var progress = new Progress<string>(message => StatusMessage = message);
             var result = await _connection.QueryService
-                .GetObjectDataAsync(node.SchemaName, node.Name, progress, token)
+                .GetObjectDataAsync(node.SchemaName, node.Name, effectiveLimit, progress, token)
                 .ConfigureAwait(true);
 
             var kind = node.NodeType == DatabaseObjectType.View ? "view" : "table";
             CurrentDataView = result.Data.DefaultView;
             CurrentObjectName = $"{result.SourceName} ({kind})";
-            TotalRowCount = result.RowCount;
+            LoadedRowCount = result.RowCount;
+            TotalRowCount = actualTotal >= 0 ? actualTotal : result.RowCount;
             FilterText = string.Empty;
-            StatusMessage = $"Loaded {result.RowCount:N0} row(s), {result.ColumnCount} column(s) from {result.SourceName} in {result.Elapsed.TotalMilliseconds:N0} ms.";
+
+            StatusMessage = IsRowCountCapped
+                ? $"Loaded {result.RowCount:N0} of {TotalRowCount:N0} row(s) from {result.SourceName} in {result.Elapsed.TotalMilliseconds:N0} ms — click \"Load All\" to fetch the rest."
+                : $"Loaded {result.RowCount:N0} row(s), {result.ColumnCount} column(s) from {result.SourceName} in {result.Elapsed.TotalMilliseconds:N0} ms.";
         }
         finally
         {
@@ -476,6 +591,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
             CurrentDataView = table.DefaultView;
             CurrentObjectName = $"{node.SchemaName}.{node.Name} (procedure)";
+            LoadedRowCount = table.Rows.Count;
             TotalRowCount = table.Rows.Count;
             FilterText = string.Empty;
             StatusMessage = $"Showing metadata for procedure {node.SchemaName}.{node.Name}.";
@@ -491,6 +607,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         CurrentDataView = null;
         CurrentObjectName = null;
         TotalRowCount = 0;
+        LoadedRowCount = 0;
         FilterText = string.Empty;
 
         StatusMessage = node.NodeType switch
@@ -526,6 +643,193 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
     }
 
     private bool CanRefreshCurrentObject() => !IsBusy && IsConnected && SelectedNode is not null;
+
+    /// <summary>
+    /// Re-loads the currently selected table/view ignoring the row limit picker, fetching
+    /// every row. Only meaningful — and only enabled — when the grid is currently showing
+    /// a capped subset (<see cref="IsRowCountCapped"/>).
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanLoadAllRows))]
+    private async Task LoadAllRowsAsync(CancellationToken token)
+    {
+        if (SelectedNode is { IsDataObject: true } node)
+        {
+            await LoadObjectDataAsync(node, token, ignoreRowLimit: true).ConfigureAwait(true);
+        }
+    }
+
+    private bool CanLoadAllRows() => !IsBusy && IsRowCountCapped;
+
+    // ----- Query editor --------------------------------------------------------------------
+
+    [RelayCommand]
+    private void ToggleQueryEditor() => IsQueryEditorVisible = !IsQueryEditorVisible;
+
+    [RelayCommand(CanExecute = nameof(CanRunQuery))]
+    private async Task RunQueryAsync(CancellationToken token)
+    {
+        if (_connection is null || string.IsNullOrWhiteSpace(QueryText))
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var progress = new Progress<string>(message => StatusMessage = message);
+            var result = await _connection.QueryService
+                .ExecuteQueryAsync(QueryText, progress, token)
+                .ConfigureAwait(true);
+
+            // The results belong to the query, not to whatever table happened to be
+            // selected in the tree — clear the selection so "Refresh"/"Load All" can't
+            // be misread as referring to a stale table.
+            SelectedNode = null;
+
+            CurrentDataView = result.Data.DefaultView;
+            CurrentObjectName = result.SourceName;
+            LoadedRowCount = result.RowCount;
+            TotalRowCount = result.RowCount;
+            FilterText = string.Empty;
+            StatusMessage = $"Query completed — {result.RowCount:N0} row(s), {result.ColumnCount} column(s) in {result.Elapsed.TotalMilliseconds:N0} ms.";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Query cancelled.";
+        }
+        catch (DatabaseQueryException ex)
+        {
+            StatusMessage = ex.Message;
+            _dialogService.ShowError("Query Failed", ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private bool CanRunQuery() => !IsBusy && IsConnected && !string.IsNullOrWhiteSpace(QueryText);
+
+    /// <summary>
+    /// Bound to F5: runs the query editor's contents if it's open and has text, otherwise
+    /// refreshes whatever table/view/procedure is currently selected — mirroring how F5
+    /// behaves contextually in most SQL client tools.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanSmartRefresh))]
+    private async Task SmartRefreshAsync(CancellationToken token)
+    {
+        if (IsQueryEditorVisible && !string.IsNullOrWhiteSpace(QueryText))
+        {
+            await RunQueryAsync(token).ConfigureAwait(true);
+        }
+        else
+        {
+            await RefreshCurrentObjectAsync(token).ConfigureAwait(true);
+        }
+    }
+
+    private bool CanSmartRefresh() => !IsBusy && IsConnected;
+
+    // ----- Saved connections -----------------------------------------------------------------
+
+    private async Task LoadSavedConnectionsAsync()
+    {
+        try
+        {
+            var profiles = await _profileStore.LoadAllAsync().ConfigureAwait(true);
+
+            SavedConnections.Clear();
+            foreach (var profile in profiles.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                SavedConnections.Add(profile);
+            }
+        }
+        catch
+        {
+            // Saved connections are a convenience, not a requirement — a failure to load
+            // them (e.g. a corrupted profile store) should never block the app from
+            // starting.
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveConnection))]
+    private async Task SaveConnectionAsync()
+    {
+        var provider = _providerFactory.GetProvider(SelectedProviderType);
+        var name = _dialogService.ShowTextInput(
+            "Save Connection",
+            $"Enter a name for this {provider.DisplayName} connection:",
+            SelectedSavedConnection?.Name ?? string.Empty);
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        var profile = new SavedConnectionProfile(name, SelectedProviderType, ConnectionString);
+
+        try
+        {
+            await _profileStore.SaveAsync(profile).ConfigureAwait(true);
+
+            var existingIndex = -1;
+            for (var i = 0; i < SavedConnections.Count; i++)
+            {
+                if (string.Equals(SavedConnections[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0)
+            {
+                SavedConnections[existingIndex] = profile;
+            }
+            else
+            {
+                SavedConnections.Add(profile);
+            }
+
+            SelectedSavedConnection = profile;
+            StatusMessage = $"Connection saved as \"{name}\".";
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError("Save Failed", $"Could not save the connection: {ex.Message}");
+        }
+    }
+
+    private bool CanSaveConnection() => !string.IsNullOrWhiteSpace(ConnectionString);
+
+    [RelayCommand(CanExecute = nameof(CanDeleteSavedConnection))]
+    private async Task DeleteSavedConnectionAsync()
+    {
+        var profile = SelectedSavedConnection;
+        if (profile is null)
+        {
+            return;
+        }
+
+        if (!_dialogService.ShowConfirmation("Delete Connection", $"Delete the saved connection \"{profile.Name}\"?"))
+        {
+            return;
+        }
+
+        try
+        {
+            await _profileStore.DeleteAsync(profile.Name).ConfigureAwait(true);
+            SavedConnections.Remove(profile);
+            SelectedSavedConnection = null;
+            StatusMessage = $"Deleted saved connection \"{profile.Name}\".";
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError("Delete Failed", $"Could not delete the connection: {ex.Message}");
+        }
+    }
+
+    private bool CanDeleteSavedConnection() => SelectedSavedConnection is not null;
 
     // ----- Filtering -----------------------------------------------------------------------
 
@@ -661,6 +965,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         CurrentDataView = null;
         CurrentObjectName = null;
         TotalRowCount = 0;
+        LoadedRowCount = 0;
         FilterText = string.Empty;
         StatusMessage = "Grid cleared.";
     }

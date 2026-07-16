@@ -18,6 +18,16 @@
         TextOptions.TextRenderingMode="ClearType"
         UseLayoutRounding="True">
 
+    <Window.InputBindings>
+        <!-- F5: run the query editor's contents if it's open, otherwise refresh the
+             currently selected table/view/procedure — mirrors most SQL client tools. -->
+        <KeyBinding Key="F5" Command="{Binding SmartRefreshCommand}" />
+        <!-- Ctrl+F5: full "hard refresh" — re-scan metadata, matching the browser convention. -->
+        <KeyBinding Key="F5" Modifiers="Control" Command="{Binding ReloadCommand}" />
+        <KeyBinding Key="Return" Modifiers="Control" Command="{Binding RunQueryCommand}" />
+        <KeyBinding Key="Q" Modifiers="Control" Command="{Binding ToggleQueryEditorCommand}" />
+    </Window.InputBindings>
+
     <Window.Resources>
         <!-- Small type badge used in the object tree; text is set per node type below. -->
         <Style x:Key="NodeBadgeBorderStyle" TargetType="Border">
@@ -104,6 +114,9 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -122,8 +135,28 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <TextBlock Grid.Row="2" Text="CONNECTION STRING" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
-                    <TextBox Grid.Row="2" Margin="0,42,0,0"
+                    <TextBlock Grid.Row="2" Text="SAVED CONNECTIONS" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <Grid Grid.Row="2" Margin="0,42,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding SavedConnections}"
+                                  SelectedItem="{Binding SelectedSavedConnection}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Grid.Column="1" Content="Delete" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="6,0,0,0" Padding="8,7"
+                                Command="{Binding DeleteSavedConnectionCommand}" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="3" Text="CONNECTION STRING" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBox Grid.Row="3" Margin="0,42,0,0"
                              Style="{StaticResource WatermarkTextBoxStyle}"
                              Text="{Binding ConnectionString, UpdateSourceTrigger=PropertyChanged}"
                              Tag="{Binding ConnectionStringPlaceholder}"
@@ -132,7 +165,11 @@
                              TextWrapping="NoWrap"
                              VerticalScrollBarVisibility="Disabled" />
 
-                    <Grid Grid.Row="3" Margin="0,16,0,0">
+                    <Button Grid.Row="4" Content="Save Connection..." Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,8,0,0" HorizontalAlignment="Left" Padding="10,6"
+                            Command="{Binding SaveConnectionCommand}" />
+
+                    <Grid Grid.Row="5" Margin="0,16,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -145,7 +182,7 @@
                                 Command="{Binding DisconnectCommand}" />
                     </Grid>
 
-                    <Grid Grid.Row="4" Margin="0,8,0,0">
+                    <Grid Grid.Row="6" Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -158,14 +195,26 @@
                                 Command="{Binding StartScanCommand}" />
                     </Grid>
 
-                    <ProgressBar Grid.Row="5" Margin="0,14,0,0" IsIndeterminate="True"
+                    <TextBlock Grid.Row="7" Text="ROW LIMIT" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <ComboBox Grid.Row="7" Margin="0,36,0,0"
+                              ToolTip="Caps how many rows are loaded when browsing a table or view. Use &quot;Load All&quot; in the grid to bypass this for a single load."
+                              ItemsSource="{Binding RowLimitOptions}"
+                              SelectedItem="{Binding SelectedRowLimit}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <ProgressBar Grid.Row="8" Margin="0,14,0,0" IsIndeterminate="True"
                                  Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                    <Border Grid.Row="6" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,10" />
+                    <Border Grid.Row="9" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,10" />
 
-                    <TextBlock Grid.Row="6" Text="DATABASE OBJECTS" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,20,0,6" />
+                    <TextBlock Grid.Row="9" Text="DATABASE OBJECTS" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,20,0,6" />
 
-                    <TreeView Grid.Row="7" Margin="0,8,0,0"
+                    <TreeView Grid.Row="10" Margin="0,8,0,0"
                               x:Name="ObjectTree"
                               ItemsSource="{Binding TreeNodes}"
                               ItemContainerStyle="{StaticResource TreeViewItemContainerStyle}"
@@ -191,6 +240,7 @@
             <!-- ===================== Main content ===================== -->
             <Grid Grid.Column="2" Margin="8,0,0,0">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -225,13 +275,53 @@
 
                         <Button Content="Clear" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding ClearCommand}" />
                         <Button Content="Disconnect" Style="{StaticResource ToolbarButtonStyle}" Command="{Binding DisconnectCommand}" />
+
+                        <Separator />
+
+                        <Button Content="Query Editor  (Ctrl+Q)" Style="{StaticResource ToolbarButtonStyle}"
+                                Command="{Binding ToggleQueryEditorCommand}" />
                     </WrapPanel>
                 </Border>
 
+                <!-- Query editor (collapsible) -->
+                <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="10" Margin="0,0,0,8"
+                        Visibility="{Binding IsQueryEditorVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBox Grid.Row="0"
+                                 Style="{StaticResource WatermarkTextBoxStyle}"
+                                 Tag="Type a SQL statement, e.g. SELECT * FROM ..."
+                                 Text="{Binding QueryText, UpdateSourceTrigger=PropertyChanged}"
+                                 FontFamily="{DynamicResource AppMonoFontFamily}"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 TextWrapping="NoWrap"
+                                 MinHeight="90"
+                                 MaxHeight="220"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto" />
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                            <Button Content="Run Query  (Ctrl+Enter)" Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding RunQueryCommand}" />
+                            <TextBlock Text="SELECT statements populate the grid below; INSERT/UPDATE/DELETE/DDL statements report the number of rows affected."
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
                 <!-- Quick filter -->
-                <Grid Grid.Row="1" Margin="0,0,0,8">
+                <Grid Grid.Row="2" Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox Grid.Column="0"
@@ -239,13 +329,17 @@
                              Tag="Filter rows across all columns..."
                              Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
                              IsEnabled="{Binding CurrentDataView, Converter={StaticResource NullToBooleanConverter}}" />
-                    <TextBlock Grid.Column="1" Margin="12,0,4,0" VerticalAlignment="Center"
+                    <Button Grid.Column="1" Content="Load All Rows" Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="8,0,0,0" Padding="10,6"
+                            Command="{Binding LoadAllRowsCommand}"
+                            Visibility="{Binding IsRowCountCapped, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Grid.Column="2" Margin="12,0,4,0" VerticalAlignment="Center"
                                Style="{StaticResource CaptionTextStyle}"
-                               Text="{Binding TotalRowCount, StringFormat='{}{0:N0} row(s)'}" />
+                               Text="{Binding RowsSummaryText}" />
                 </Grid>
 
                 <!-- Data grid / empty state -->
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="3">
                     <DataGrid x:Name="ResultsGrid"
                               ItemsSource="{Binding CurrentDataView}"
                               Visibility="{Binding CurrentDataView, Converter={StaticResource NullToVisibilityConverter}}" />
@@ -308,7 +402,7 @@
             <StatusBarItem>
                 <TextBlock>
                     <Run Text="Rows: " Foreground="{DynamicResource TextTertiaryBrush}" />
-                    <Run Text="{Binding TotalRowCount, StringFormat=N0, Mode=OneWay}" />
+                    <Run Text="{Binding RowsSummaryText, Mode=OneWay}" />
                 </TextBlock>
             </StatusBarItem>
             <Separator />

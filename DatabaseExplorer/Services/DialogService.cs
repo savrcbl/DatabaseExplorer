@@ -42,5 +42,18 @@ public sealed class DialogService : IDialogService
         });
     }
 
+    public string? ShowTextInput(string title, string message, string defaultValue = "")
+    {
+        return Application.Current.Dispatcher.Invoke(() =>
+        {
+            var dialog = new Views.TextInputDialog(title, message, defaultValue)
+            {
+                Owner = GetOwner()
+            };
+
+            return dialog.ShowDialog() == true ? dialog.ResultText : null;
+        });
+    }
+
     private static Window? GetOwner() => Application.Current?.MainWindow;
 }

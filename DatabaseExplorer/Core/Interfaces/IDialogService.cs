@@ -24,4 +24,13 @@ public interface IDialogService
     /// <param name="filter">A Win32-style filter string, e.g. "CSV file (*.csv)|*.csv".</param>
     /// <param name="defaultFileName">The suggested file name.</param>
     string? ShowSaveFileDialog(string filter, string defaultFileName);
+
+    /// <summary>
+    /// Prompts the user for a short line of text (e.g. a name to save a connection
+    /// under). Returns the entered text, or null if the user cancelled.
+    /// </summary>
+    /// <param name="title">The dialog's title bar text.</param>
+    /// <param name="message">A short prompt shown above the input field.</param>
+    /// <param name="defaultValue">The initial value of the input field.</param>
+    string? ShowTextInput(string title, string message, string defaultValue = "");
 }

@@ -204,9 +204,10 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
                     <Border Background="Transparent">
-                        <Path Data="M 0 0 L 4 4 L 8 0 Z"
+                        <Path Data="M 0 0 L 5 5 L 10 0 Z"
                               Fill="{DynamicResource TextSecondaryBrush}"
                               HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
                               Margin="0,0,12,0" />
                     </Border>
                 </ControlTemplate>
@@ -479,7 +480,7 @@
         <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
         <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel" />
         <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
-        <Setter Property="SelectionUnit" Value="CellOrRowHeader" />
+        <Setter Property="SelectionUnit" Value="FullRow" />
         <Setter Property="SelectionMode" Value="Extended" />
         <Setter Property="HeadersVisibility" Value="Column" />
     </Style>
