@@ -2,10 +2,6 @@ using System.Data;
 
 namespace DatabaseExplorer.Core.Models;
 
-/// <summary>
-/// Wraps the outcome of a data-retrieval query against a table or view, including the
-/// materialized data and timing/size metadata used to populate the status bar.
-/// </summary>
 public sealed class QueryResult
 {
     /// <summary>The retrieved data. Never null; may have zero rows.</summary>
