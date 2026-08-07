@@ -11,8 +11,6 @@ namespace DatabaseExplorer.Helpers;
 /// </summary>
 internal static class NativeThemeMethods
 {
-    // DWMWA_USE_IMMERSIVE_DARK_MODE. Windows 11 (and Windows 10 20H1+) use value 20;
-    // early Windows 10 Insider builds used 19. We try 20 first and fall back to 19.
     private const int DwmwaUseImmersiveDarkMode = 20;
     private const int DwmwaUseImmersiveDarkModeLegacy = 19;
 
@@ -40,18 +38,14 @@ internal static class NativeThemeMethods
 
             if (result != 0)
             {
-                // Older Windows 10 builds expect the pre-release attribute value instead.
                 DwmSetWindowAttribute(hwnd, DwmwaUseImmersiveDarkModeLegacy, ref useDark, sizeof(int));
             }
         }
         catch (EntryPointNotFoundException)
         {
-            // dwmapi.dll on this OS version doesn't support the attribute at all
-            // (very old Windows 10). Nothing to do — the title bar just stays light.
         }
         catch (DllNotFoundException)
         {
-            // Not running on Windows (e.g. design-time tooling) — nothing to do.
         }
     }
 }
