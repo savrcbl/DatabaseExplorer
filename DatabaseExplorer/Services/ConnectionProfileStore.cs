@@ -48,9 +48,6 @@ public sealed class ConnectionProfileStore : IConnectionProfileStore
             var connectionString = TryDecrypt(record.ProtectedConnectionString);
             if (connectionString is null)
             {
-                // Most likely the file was copied from a different machine or user
-                // account, so DPAPI can no longer unprotect it. Skip rather than crash
-                // the whole list — the user can just re-save that connection.
                 continue;
             }
 
@@ -118,8 +115,6 @@ public sealed class ConnectionProfileStore : IConnectionProfileStore
         }
         catch (JsonException)
         {
-            // A corrupted or manually-edited file shouldn't prevent the app from
-            // starting — treat it as "no saved connections" rather than crashing.
             return [];
         }
     }
