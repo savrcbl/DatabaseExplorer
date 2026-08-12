@@ -3,12 +3,6 @@ using System.Windows.Input;
 
 namespace DatabaseExplorer.Views;
 
-/// <summary>
-/// A small modal dialog collecting a single line of text, used for prompts such as
-/// naming a saved connection. Set <see cref="Window.Owner"/> before calling
-/// <see cref="Window.ShowDialog"/> so it centers correctly and inherits the app's
-/// current theme.
-/// </summary>
 public partial class TextInputDialog : Window
 {
     public TextInputDialog(string title, string message, string defaultValue)
@@ -25,7 +19,6 @@ public partial class TextInputDialog : Window
         };
     }
 
-    /// <summary>The text entered when the dialog was accepted; null if cancelled.</summary>
     public string? ResultText { get; private set; }
 
     private void OkButton_Click(object sender, RoutedEventArgs e) => Accept();

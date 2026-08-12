@@ -14,11 +14,6 @@ using Microsoft.Extensions.Hosting;
 
 namespace DatabaseExplorer;
 
-/// <summary>
-/// Application entry point. Wires up the dependency injection container, applies the
-/// initial (and ongoing) light/dark theme, and translates any exception that escapes the
-/// normal error-handling paths into a friendly message instead of a crash.
-/// </summary>
 public partial class App : Application
 {
     private IHost? _host;
@@ -37,8 +32,6 @@ public partial class App : Application
 
         await _host.StartAsync().ConfigureAwait(true);
 
-        // Detect and apply the current Windows light/dark theme before the window is
-        // shown, and keep listening so the app follows the OS theme afterwards.
         var themeService = _host.Services.GetRequiredService<IThemeService>();
         themeService.Initialize();
 
@@ -49,21 +42,16 @@ public partial class App : Application
 
     private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     {
-        // Database engine providers. Supporting a new engine only requires adding one
-        // more line here (plus the provider's own IDatabaseProvider/IDatabaseConnection/
-        // IDatabaseQueryService implementations) — nothing else in the app changes.
         services.AddSingleton<IDatabaseProvider, SqlServerDatabaseProvider>();
         services.AddSingleton<IDatabaseProvider, PostgreSqlDatabaseProvider>();
         services.AddSingleton<IDatabaseProvider, SqliteDatabaseProvider>();
         services.AddSingleton<IDatabaseProviderFactory, DatabaseProviderFactory>();
 
-        // Cross-cutting application services.
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IExportService, ExportService>();
         services.AddSingleton<IConnectionProfileStore, ConnectionProfileStore>();
 
-        // View models and views.
         services.AddTransient<MainViewModel>();
         services.AddTransient<MainWindow>();
     }
@@ -95,8 +83,6 @@ public partial class App : Application
 
     private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
-        // Background task failures are already surfaced to the user via IDialogService at
-        // their origin; here we only need to prevent the process from being torn down.
         e.SetObserved();
     }
 
