@@ -3,11 +3,6 @@ using System.Windows.Data;
 
 namespace DatabaseExplorer.Helpers.Converters;
 
-/// <summary>
-/// Converts null/non-null (and, for strings, empty/non-empty) to a <see cref="bool"/>.
-/// Unlike <see cref="NullToVisibilityConverter"/>, this is for binding to boolean
-/// properties such as <c>IsEnabled</c> rather than <c>Visibility</c>.
-/// </summary>
 public sealed class NullToBooleanConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

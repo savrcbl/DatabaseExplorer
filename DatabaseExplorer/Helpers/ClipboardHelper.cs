@@ -5,13 +5,6 @@ using System.Windows.Controls;
 
 namespace DatabaseExplorer.Helpers;
 
-/// <summary>
-/// Builds tab-separated clipboard payloads from a bound <see cref="DataGrid"/>'s current
-/// selection, for the toolbar's Copy Cell / Copy Row / Copy Table actions. The grid is
-/// bound to a <see cref="DataView"/>, so cell values are read directly from the
-/// underlying <see cref="DataRowView"/> rather than from realized visual cells, which
-/// keeps this correct even for virtualized, off-screen rows.
-/// </summary>
 public static class ClipboardHelper
 {
     /// <summary>Copies the single currently-focused cell's value to the clipboard.</summary>
@@ -110,10 +103,6 @@ public static class ClipboardHelper
         _ => value.ToString() ?? string.Empty
     };
 
-    /// <summary>
-    /// Setting clipboard text can intermittently throw <see cref="System.Runtime.InteropServices.COMException"/>
-    /// if another process transiently holds the clipboard; retry briefly before giving up.
-    /// </summary>
     private static void SetClipboardText(string text)
     {
         const int maxAttempts = 3;
