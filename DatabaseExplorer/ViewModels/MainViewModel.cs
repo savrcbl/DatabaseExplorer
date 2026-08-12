@@ -12,11 +12,6 @@ using DatabaseExplorer.Helpers;
 
 namespace DatabaseExplorer.ViewModels;
 
-/// <summary>
-/// The single view model backing <see cref="Views.MainWindow"/>. Owns the active
-/// database connection, the object tree, the currently displayed data, and every
-/// user-initiated command (connect, scan, reload, export, copy, ...).
-/// </summary>
 public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly IDatabaseProviderFactory _providerFactory;
@@ -140,18 +135,10 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         or AppConnectionState.Scanning
         or AppConnectionState.Ready;
 
-    /// <summary>
-    /// A friendly "N of M rows" summary for the status bar. Falls back to a plain count
-    /// when nothing is capped (or the total is unknown).
-    /// </summary>
     public string RowsSummaryText => IsRowCountCapped
         ? $"{LoadedRowCount:N0} of {TotalRowCount:N0} row(s)"
         : $"{LoadedRowCount:N0} row(s)";
 
-    /// <summary>
-    /// True when the grid is showing fewer rows than the object actually contains,
-    /// because a row limit was applied. Drives the "Load All" banner and command.
-    /// </summary>
     public bool IsRowCountCapped => LoadedRowCount > 0 && LoadedRowCount < TotalRowCount;
 
     // ----- Property change hooks (keep computed state & command availability in sync) --
@@ -204,9 +191,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
             return;
         }
 
-        // Populate the provider/connection string fields so the user can review or
-        // tweak them before clicking Connect — selecting a saved profile does not
-        // connect automatically.
         SelectedProviderType = value.ProviderType;
         ConnectionString = value.ConnectionString;
     }
@@ -236,11 +220,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private bool CanConnect() => !IsBusy && !IsConnected && !string.IsNullOrWhiteSpace(ConnectionString);
 
-    /// <summary>
-    /// Opens a new connection using the currently selected provider and connection
-    /// string. Returns true on success. Shared by both the Connect command and
-    /// Start Scanning (which connects first if not already connected).
-    /// </summary>
     private async Task<bool> ConnectInternalAsync(CancellationToken token)
     {
         var provider = _providerFactory.GetProvider(SelectedProviderType);
@@ -461,11 +440,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     // ----- Selection-driven data / metadata loading ---------------------------------------
 
-    /// <summary>
-    /// Loads the appropriate content for the newly-selected tree node: full row data for
-    /// tables and views, a lightweight metadata summary for procedures, and a navigational
-    /// status message (with the grid cleared) for schema/folder/database nodes.
-    /// </summary>
     private async Task LoadSelectedNodeDataAsync()
     {
         _selectionLoadCts?.Cancel();
@@ -534,8 +508,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
             }
             catch (DatabaseQueryException)
             {
-                // Some providers/permission levels don't allow COUNT(*) even when SELECT
-                // is allowed. Fall back to "unknown total" rather than failing the load.
                 actualTotal = -1;
             }
 
@@ -560,11 +532,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
             IsBusy = false;
         }
     }
-
-    /// <summary>
-    /// Procedures do not have "rows" in the same sense as tables/views, so selecting one
-    /// displays its identity as metadata rather than attempting to execute it.
-    /// </summary>
     private async Task LoadProcedureMetadataAsync(TreeNodeViewModel node, CancellationToken token)
     {
         if (_connection is null || node.SchemaName is null)
@@ -644,11 +611,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private bool CanRefreshCurrentObject() => !IsBusy && IsConnected && SelectedNode is not null;
 
-    /// <summary>
-    /// Re-loads the currently selected table/view ignoring the row limit picker, fetching
-    /// every row. Only meaningful — and only enabled — when the grid is currently showing
-    /// a capped subset (<see cref="IsRowCountCapped"/>).
-    /// </summary>
     [RelayCommand(CanExecute = nameof(CanLoadAllRows))]
     private async Task LoadAllRowsAsync(CancellationToken token)
     {
@@ -681,9 +643,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
                 .ExecuteQueryAsync(QueryText, progress, token)
                 .ConfigureAwait(true);
 
-            // The results belong to the query, not to whatever table happened to be
-            // selected in the tree — clear the selection so "Refresh"/"Load All" can't
-            // be misread as referring to a stale table.
             SelectedNode = null;
 
             CurrentDataView = result.Data.DefaultView;
@@ -710,11 +669,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private bool CanRunQuery() => !IsBusy && IsConnected && !string.IsNullOrWhiteSpace(QueryText);
 
-    /// <summary>
-    /// Bound to F5: runs the query editor's contents if it's open and has text, otherwise
-    /// refreshes whatever table/view/procedure is currently selected — mirroring how F5
-    /// behaves contextually in most SQL client tools.
-    /// </summary>
     [RelayCommand(CanExecute = nameof(CanSmartRefresh))]
     private async Task SmartRefreshAsync(CancellationToken token)
     {
@@ -746,9 +700,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
         catch
         {
-            // Saved connections are a convenience, not a requirement — a failure to load
-            // them (e.g. a corrupted profile store) should never block the app from
-            // starting.
         }
     }
 
@@ -857,8 +808,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         }
         catch (Exception)
         {
-            // A filter expression that a provider-specific type can't be converted for
-            // should never crash the UI — simply leave the previous filter in place.
         }
     }
 
@@ -916,11 +865,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     private bool CanExport() => !IsBusy && CurrentDataView is not null;
 
-    // ----- Clipboard -----------------------------------------------------------------------
-    // These commands take the bound DataGrid itself as a parameter (via CommandParameter in
-    // XAML) since WPF's DataGrid does not expose its cell/row selection as bindable
-    // properties. This is a common, pragmatic exception to strict MVVM for grid clipboard
-    // operations.
 
     [RelayCommand(CanExecute = nameof(CanUseGrid))]
     private void CopyCell(DataGrid? grid)
@@ -1017,20 +961,6 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     // ----- Shutdown ------------------------------------------------------------------------
 
-    /// <summary>
-    /// Closes and disposes the active connection (if any) and releases pending-load
-    /// resources. Safe to call more than once — every step is null-guarded, and disposed
-    /// fields are set back to <c>null</c> immediately, so a repeat call (e.g. from a
-    /// second, redundant shutdown path) is a no-op rather than an
-    /// <see cref="ObjectDisposedException"/>. Every internal await uses
-    /// <c>ConfigureAwait(false)</c> deliberately — <see cref="Views.MainWindow"/> blocks
-    /// on this synchronously (via <c>Task.Run(...).GetAwaiter().GetResult()</c>) while
-    /// the window is closing, and a continuation that needed to marshal back to the UI
-    /// thread's <c>SynchronizationContext</c> at that point would deadlock. Swallows any
-    /// error from the close attempt itself — a database that doesn't acknowledge a clean
-    /// close should never prevent the app from shutting down or the resource from being
-    /// released.
-    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (_selectionLoadCts is not null)
