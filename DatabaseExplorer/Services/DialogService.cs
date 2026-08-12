@@ -4,9 +4,6 @@ using Microsoft.Win32;
 
 namespace DatabaseExplorer.Services;
 
-/// <summary>
-/// <see cref="IDialogService"/> implementation backed by standard WPF/Win32 dialogs.
-/// </summary>
 public sealed class DialogService : IDialogService
 {
     public void ShowError(string title, string message) =>

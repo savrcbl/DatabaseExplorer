@@ -8,15 +8,6 @@ using DatabaseExplorer.Core.Models;
 
 namespace DatabaseExplorer.Services;
 
-/// <summary>
-/// <see cref="IConnectionProfileStore"/> implementation that persists profiles as JSON
-/// under <c>%AppData%\DatabaseExplorer\connections.json</c>. Connection strings are
-/// encrypted at rest using Windows DPAPI (<see cref="ProtectedData"/>,
-/// <see cref="DataProtectionScope.CurrentUser"/>), so the file is unreadable outside the
-/// current Windows user account on this machine — meaningfully better than plaintext,
-/// though this is convenience-level protection for a local desktop tool, not a
-/// replacement for a real secrets manager in a team/production setting.
-/// </summary>
 public sealed class ConnectionProfileStore : IConnectionProfileStore
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()

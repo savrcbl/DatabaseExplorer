@@ -9,10 +9,6 @@ using System.IO;
 
 namespace DatabaseExplorer.Services;
 
-/// <summary>
-/// <see cref="IExportService"/> implementation supporting CSV (hand-written, RFC 4180
-/// compliant) and Excel (via ClosedXML) export of the currently displayed grid data.
-/// </summary>
 public sealed class ExportService : IExportService
 {
     public async Task ExportAsync(

@@ -4,11 +4,6 @@ using Microsoft.Win32;
 
 namespace DatabaseExplorer.Services;
 
-/// <summary>
-/// Detects the Windows "app mode" (light/dark) via the registry, applies the matching
-/// resource dictionary from the <c>Themes</c> folder, and re-applies automatically
-/// whenever the user changes their OS theme while the app is running.
-/// </summary>
 public sealed class ThemeService : IThemeService, IDisposable
 {
     private const string PersonalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
@@ -46,8 +41,6 @@ public sealed class ThemeService : IThemeService, IDisposable
         {
             var merged = Application.Current.Resources.MergedDictionaries;
 
-            // The theme color dictionary is always the first merged dictionary
-            // (see App.xaml); the control style dictionaries that follow it stay put.
             var existingThemeDictionary = merged.FirstOrDefault(d =>
                 d.Source is not null && d.Source.OriginalString.Contains("Colors.", StringComparison.Ordinal));
 
@@ -80,10 +73,6 @@ public sealed class ThemeService : IThemeService, IDisposable
         }
     }
 
-    /// <summary>
-    /// Reads the current Windows "app mode" from the registry. Defaults to light mode
-    /// if the value cannot be read (older Windows versions, restricted permissions, etc.).
-    /// </summary>
     private static AppTheme DetectWindowsTheme()
     {
         try
@@ -97,7 +86,6 @@ public sealed class ThemeService : IThemeService, IDisposable
         }
         catch
         {
-            // Fall through to the default below; theming is not critical enough to fail startup over.
         }
 
         return AppTheme.Light;
