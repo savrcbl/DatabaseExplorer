@@ -4,12 +4,6 @@ using Microsoft.Data.Sqlite;
 
 namespace DatabaseExplorer.DataProviders.Sqlite;
 
-/// <summary>
-/// <see cref="IDatabaseProvider"/> implementation for SQLite, backed by
-/// Microsoft.Data.Sqlite. Unlike SQL Server and PostgreSQL, SQLite is a serverless,
-/// single-file database — the "connection string" is really just a file path (or
-/// <c>:memory:</c>), and there is no authentication, server, or multi-schema concept.
-/// </summary>
 public sealed class SqliteDatabaseProvider : IDatabaseProvider
 {
     public DatabaseProviderType ProviderType => DatabaseProviderType.Sqlite;

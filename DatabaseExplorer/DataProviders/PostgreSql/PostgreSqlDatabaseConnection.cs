@@ -8,9 +8,6 @@ using Npgsql;
 
 namespace DatabaseExplorer.DataProviders.PostgreSql;
 
-/// <summary>
-/// <see cref="IDatabaseConnection"/> implementation for PostgreSQL.
-/// </summary>
 public sealed class PostgreSqlDatabaseConnection : IDatabaseConnection
 {
     private readonly NpgsqlConnection _connection;

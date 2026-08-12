@@ -4,9 +4,6 @@ using Npgsql;
 
 namespace DatabaseExplorer.DataProviders.PostgreSql;
 
-/// <summary>
-/// <see cref="IDatabaseProvider"/> implementation for PostgreSQL, backed by Npgsql.
-/// </summary>
 public sealed class PostgreSqlDatabaseProvider : IDatabaseProvider
 {
     public DatabaseProviderType ProviderType => DatabaseProviderType.PostgreSql;

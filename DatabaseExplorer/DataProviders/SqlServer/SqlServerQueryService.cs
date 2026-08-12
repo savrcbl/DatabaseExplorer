@@ -1,6 +1,4 @@
 using System.Data;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using DatabaseExplorer.Core.Exceptions;
 using DatabaseExplorer.Core.Interfaces;
@@ -9,11 +7,6 @@ using Microsoft.Data.SqlClient;
 
 namespace DatabaseExplorer.DataProviders.SqlServer;
 
-/// <summary>
-/// <see cref="IDatabaseQueryService"/> implementation for Microsoft SQL Server. Uses
-/// ANSI INFORMATION_SCHEMA views where possible for portability, falling back to
-/// SQL Server's sys.* catalog views only where INFORMATION_SCHEMA has no equivalent.
-/// </summary>
 public sealed class SqlServerQueryService : IDatabaseQueryService
 {
     private readonly SqlConnection _connection;

@@ -9,22 +9,6 @@ using Microsoft.Data.Sqlite;
 
 namespace DatabaseExplorer.DataProviders.Sqlite;
 
-/// <summary>
-/// <see cref="IDatabaseQueryService"/> implementation for SQLite. SQLite differs from
-/// SQL Server and PostgreSQL in three ways that show up throughout this class:
-/// <list type="bullet">
-/// <item>There is no multi-schema concept — <see cref="GetSchemasAsync"/> always returns
-/// a single synthetic "main" schema (SQLite's own name for the default database), and
-/// the <c>schema</c> parameter elsewhere is accepted (to satisfy the interface) but
-/// otherwise unused.</item>
-/// <item>There are no stored procedures — <see cref="GetProceduresAsync"/> always
-/// returns an empty list, so the tree simply never shows a Procedures folder for a
-/// SQLite connection.</item>
-/// <item>Metadata comes from the <c>sqlite_master</c> table and the
-/// <c>PRAGMA table_info(...)</c> statement rather than ANSI INFORMATION_SCHEMA views,
-/// since SQLite doesn't implement INFORMATION_SCHEMA.</item>
-/// </list>
-/// </summary>
 public sealed class SqliteQueryService : IDatabaseQueryService
 {
     private readonly SqliteConnection _connection;
@@ -36,9 +20,6 @@ public sealed class SqliteQueryService : IDatabaseQueryService
 
     public Task<IReadOnlyList<SchemaInfo>> GetSchemasAsync(CancellationToken cancellationToken = default)
     {
-        // SQLite has no real schema concept — every object lives in the single "main"
-        // database attached to the connection. Returning a single synthetic schema here
-        // lets the rest of the app (tree scan, status bar, etc.) work unmodified.
         IReadOnlyList<SchemaInfo> schemas = [new SchemaInfo("main")];
         return Task.FromResult(schemas);
     }

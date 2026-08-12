@@ -4,10 +4,6 @@ using Microsoft.Data.SqlClient;
 
 namespace DatabaseExplorer.DataProviders.SqlServer;
 
-/// <summary>
-/// <see cref="IDatabaseProvider"/> implementation for Microsoft SQL Server, backed by
-/// Microsoft.Data.SqlClient.
-/// </summary>
 public sealed class SqlServerDatabaseProvider : IDatabaseProvider
 {
     public DatabaseProviderType ProviderType => DatabaseProviderType.SqlServer;

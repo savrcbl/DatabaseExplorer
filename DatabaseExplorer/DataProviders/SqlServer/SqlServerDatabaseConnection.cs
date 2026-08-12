@@ -8,9 +8,6 @@ using Microsoft.Data.SqlClient;
 
 namespace DatabaseExplorer.DataProviders.SqlServer;
 
-/// <summary>
-/// <see cref="IDatabaseConnection"/> implementation for Microsoft SQL Server.
-/// </summary>
 public sealed class SqlServerDatabaseConnection : IDatabaseConnection
 {
     private readonly SqlConnection _connection;
@@ -86,10 +83,6 @@ public sealed class SqlServerDatabaseConnection : IDatabaseConnection
         }
     }
 
-    /// <summary>
-    /// Maps a <see cref="SqlException"/> to a short, user-friendly message. SQL Server
-    /// signals most connectivity failure classes via well-known error numbers.
-    /// </summary>
     private static string TranslateSqlException(SqlException ex) => ClassifySqlException(ex) switch
     {
         DatabaseConnectionFailureReason.AuthenticationFailed =>

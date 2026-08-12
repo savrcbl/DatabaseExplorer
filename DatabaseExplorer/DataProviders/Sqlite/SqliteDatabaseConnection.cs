@@ -9,13 +9,6 @@ using Microsoft.Data.Sqlite;
 
 namespace DatabaseExplorer.DataProviders.Sqlite;
 
-/// <summary>
-/// <see cref="IDatabaseConnection"/> implementation for SQLite. There is no real
-/// "server" for a file-based database, so <see cref="ServerName"/> reports the
-/// containing directory (or "(in-memory)") and <see cref="DatabaseName"/> reports the
-/// file name — chosen so the status bar still shows something meaningful without any
-/// SQLite-specific UI code elsewhere in the app.
-/// </summary>
 public sealed class SqliteDatabaseConnection : IDatabaseConnection
 {
     private readonly SqliteConnection _connection;
@@ -121,11 +114,6 @@ public sealed class SqliteDatabaseConnection : IDatabaseConnection
         }
     }
 
-    /// <summary>
-    /// Maps a <see cref="SqliteException"/> to a short, user-friendly message. SQLite
-    /// signals most open failures via its native result codes, exposed as
-    /// <see cref="SqliteException.SqliteErrorCode"/>.
-    /// </summary>
     private static string TranslateSqliteException(SqliteException ex) => ClassifySqliteException(ex) switch
     {
         DatabaseConnectionFailureReason.DatabaseNotFound =>

@@ -9,10 +9,6 @@ using Npgsql;
 
 namespace DatabaseExplorer.DataProviders.PostgreSql;
 
-/// <summary>
-/// <see cref="IDatabaseQueryService"/> implementation for PostgreSQL, using the ANSI
-/// <c>information_schema</c> views for portability.
-/// </summary>
 public sealed class PostgreSqlQueryService : IDatabaseQueryService
 {
     private readonly NpgsqlConnection _connection;
