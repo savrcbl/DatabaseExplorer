@@ -57,7 +57,7 @@ public sealed class ExportService : IExportService
                 var fields = new string[columnCount];
                 for (var col = 0; col < columnCount; col++)
                 {
-                    fields[col] = EscapeCsvField(FormatValue(row[col]));
+                    fields[col] = EscapeCsvField(NeutralizeFormula(FormatValue(row[col])));
                 }
 
                 writer.WriteLine(string.Join(',', fields));
@@ -135,7 +135,7 @@ public sealed class ExportService : IExportService
                 cell.Value = Convert.ToDouble(value, CultureInfo.InvariantCulture);
                 break;
             default:
-                cell.Value = FormatValue(value);
+                cell.Value = NeutralizeFormula(FormatValue(value));
                 break;
         }
     }
@@ -148,6 +148,18 @@ public sealed class ExportService : IExportService
         IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
         _ => value.ToString() ?? string.Empty
     };
+
+    /// <summary>
+    /// Neutralizes CSV/Excel formula injection. Spreadsheet apps treat a leading
+    /// =, +, -, or @ as the start of a formula, so cell content copied verbatim from a
+    /// database (which is untrusted, attacker-controllable data) could execute code when the
+    /// exported file is opened. Prefixing with a tab preserves the visible text while stopping
+    /// it from being parsed as a formula.
+    /// </summary>
+    private static string NeutralizeFormula(string value) =>
+        value.Length > 0 && (value[0] is '=' or '+' or '-' or '@')
+            ? "\t" + value
+            : value;
 
     /// <summary>Escapes a single CSV field per RFC 4180.</summary>
     private static string EscapeCsvField(string field)

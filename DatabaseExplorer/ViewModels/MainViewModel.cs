@@ -700,8 +700,9 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
                 SavedConnections.Add(profile);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            StatusMessage = $"Could not load saved connections: {ex.Message}";
         }
     }
 
@@ -808,8 +809,9 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
             CurrentDataView.RowFilter = string.Join(" OR ", clauses);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            StatusMessage = $"Filter could not be applied: {ex.Message}";
         }
     }
 
