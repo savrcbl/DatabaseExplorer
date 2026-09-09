@@ -651,27 +651,23 @@
                 <ControlTemplate TargetType="ToggleButton">
                     <Grid>
                         <Border x:Name="Track"
-                                CornerRadius="10"
-                                Background="{DynamicResource ButtonSecondaryBackgroundBrush}"
-                                BorderBrush="{DynamicResource BorderBrush2}"
-                                BorderThickness="1" />
+                            CornerRadius="10"
+                            Background="{DynamicResource ButtonSecondaryBackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush2}"
+                            BorderThickness="1" />
                         <Border x:Name="Thumb"
-                                Width="14" Height="14"
-                                CornerRadius="7"
-                                Background="{DynamicResource TextTertiaryBrush}"
-                                HorizontalAlignment="Left"
-                                Margin="3,0,0,0">
-                            <Border.RenderTransform>
-                                <TranslateTransform x:Name="ThumbOffset" X="0" />
-                            </Border.RenderTransform>
-                        </Border>
+                            Width="14" Height="14"
+                            CornerRadius="7"
+                            Background="{DynamicResource TextTertiaryBrush}"
+                            HorizontalAlignment="Left"
+                            Margin="3" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}" />
                             <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                             <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource TextOnAccentBrush}" />
-                            <Setter TargetName="ThumbOffset" Property="X" Value="20" />
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
