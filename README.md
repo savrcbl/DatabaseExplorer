@@ -13,7 +13,7 @@ Built with WPF, MVVM (CommunityToolkit.Mvvm), and dependency injection (`Microso
 - **Quick filter** — client-side, cross-column search over the currently loaded grid.
 - **Export** — save any result set to CSV or Excel (`.xlsx`).
 - **Saved connections** — store named connections locally, encrypted with Windows DPAPI (tied to your Windows user account; see [Security notes](#security-notes)).
-- **Light/dark theming**, including native dark title bar support on Windows 10/11.
+- **Light/dark toggle**, persisted between launches. There's no "follow system theme" mode — the app keeps whatever you last picked, including native dark title bar support on Windows 10/11.
 - **Clipboard helpers** — copy a cell, row, or the whole table.
 
 ## Getting started
