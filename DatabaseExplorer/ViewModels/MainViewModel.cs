@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Linq;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +48,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     // ----- Navigation panel state -----------------------------------------------------
 
-    public ObservableCollection<ProviderOption> AvailableProviders { get; } = [];
+    public ObservableCollection<ProviderOption> AvailableProviders { get; } = new ObservableCollection<ProviderOption>();
 
     [ObservableProperty]
     private DatabaseProviderType _selectedProviderType;
@@ -57,14 +59,14 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
     public string ConnectionStringPlaceholder =>
         _providerFactory.GetProvider(SelectedProviderType).ConnectionStringPlaceholder;
 
-    public ObservableCollection<TreeNodeViewModel> TreeNodes { get; } = [];
+    public ObservableCollection<TreeNodeViewModel> TreeNodes { get; } = new ObservableCollection<TreeNodeViewModel>();
 
     [ObservableProperty]
     private TreeNodeViewModel? _selectedNode;
 
     // ----- Saved connections ------------------------------------------------------------
 
-    public ObservableCollection<SavedConnectionProfile> SavedConnections { get; } = [];
+    public ObservableCollection<SavedConnectionProfile> SavedConnections { get; } = new ObservableCollection<SavedConnectionProfile>();
 
     [ObservableProperty]
     private SavedConnectionProfile? _selectedSavedConnection;
@@ -79,14 +81,14 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     // ----- Row limit / paging ------------------------------------------------------------
 
-    public ObservableCollection<RowLimitOption> RowLimitOptions { get; } =
-    [
+    public ObservableCollection<RowLimitOption> RowLimitOptions { get; } = new ObservableCollection<RowLimitOption>
+    {
         new RowLimitOption("100 rows", 100),
         new RowLimitOption("1,000 rows", 1000),
         new RowLimitOption("5,000 rows", 5000),
         new RowLimitOption("10,000 rows", 10000),
         new RowLimitOption("No limit", null)
-    ];
+    };
 
     [ObservableProperty]
     private RowLimitOption _selectedRowLimit;

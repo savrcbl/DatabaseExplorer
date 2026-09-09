@@ -1,5 +1,5 @@
 namespace DatabaseExplorer.Core.Models;
-record ProviderOption(
+public record ProviderOption(
     DatabaseProviderType Type,
     string DisplayName,
     string ConnectionStringPlaceholder);
