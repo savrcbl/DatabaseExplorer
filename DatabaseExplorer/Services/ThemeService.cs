@@ -1,20 +1,36 @@
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using DatabaseExplorer.Core.Interfaces;
-using Microsoft.Win32;
 
 namespace DatabaseExplorer.Services;
 
-public sealed class ThemeService : IThemeService, IDisposable
+/// <summary>
+/// Applies and persists the app's Light/Dark theme.
+///
+/// Deliberately does NOT follow the Windows system theme: the app is a data tool that people
+/// often run alongside a terminal or SQL client in a specific theme of their own choosing, so
+/// the last theme the user explicitly picked here is respected until they change it again —
+/// it never flips underneath them because they changed their Windows-wide setting.
+/// </summary>
+public sealed class ThemeService : IThemeService
 {
-    private const string PersonalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-    private const string AppsUseLightThemeValue = "AppsUseLightTheme";
-
+    private readonly string _settingsFilePath;
     private bool _initialized;
-    private bool _disposed;
 
     public AppTheme CurrentTheme { get; private set; } = AppTheme.Light;
 
     public event EventHandler<AppTheme>? ThemeChanged;
+
+    public ThemeService()
+    {
+        var appDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "DatabaseExplorer");
+
+        Directory.CreateDirectory(appDataFolder);
+        _settingsFilePath = Path.Combine(appDataFolder, "ui-settings.json");
+    }
 
     public void Initialize()
     {
@@ -24,10 +40,11 @@ public sealed class ThemeService : IThemeService, IDisposable
         }
 
         _initialized = true;
-
-        ApplyTheme(DetectWindowsTheme());
-        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        ApplyTheme(LoadSavedTheme());
     }
+
+    public void ToggleTheme() =>
+        ApplyTheme(CurrentTheme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark);
 
     public void ApplyTheme(AppTheme theme)
     {
@@ -56,49 +73,47 @@ public sealed class ThemeService : IThemeService, IDisposable
         });
 
         CurrentTheme = theme;
+        SaveTheme(theme);
         ThemeChanged?.Invoke(this, theme);
     }
 
-    private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
-    {
-        if (e.Category != UserPreferenceCategory.General)
-        {
-            return;
-        }
-
-        var detected = DetectWindowsTheme();
-        if (detected != CurrentTheme)
-        {
-            ApplyTheme(detected);
-        }
-    }
-
-    private static AppTheme DetectWindowsTheme()
+    private AppTheme LoadSavedTheme()
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(PersonalizeKeyPath);
-            var value = key?.GetValue(AppsUseLightThemeValue);
-            if (value is int intValue)
+            if (!File.Exists(_settingsFilePath))
             {
-                return intValue == 0 ? AppTheme.Dark : AppTheme.Light;
+                return AppTheme.Light;
             }
+
+            var json = File.ReadAllText(_settingsFilePath);
+            var settings = JsonSerializer.Deserialize<UiSettings>(json);
+            return settings?.Theme ?? AppTheme.Light;
         }
         catch
         {
+            // Missing, unreadable, or corrupt settings file — fall back to the default rather
+            // than blocking startup.
+            return AppTheme.Light;
         }
-
-        return AppTheme.Light;
     }
 
-    public void Dispose()
+    private void SaveTheme(AppTheme theme)
     {
-        if (_disposed)
+        try
         {
-            return;
+            var json = JsonSerializer.Serialize(new UiSettings { Theme = theme });
+            File.WriteAllText(_settingsFilePath, json);
         }
+        catch
+        {
+            // Best-effort: if we can't persist the preference, the app still works for this
+            // session, it just won't remember the choice next launch.
+        }
+    }
 
-        _disposed = true;
-        SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+    private sealed class UiSettings
+    {
+        public AppTheme Theme { get; set; } = AppTheme.Light;
     }
 }

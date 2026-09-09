@@ -30,18 +30,20 @@
 
     <Window.Resources>
         <!-- Small type badge used in the object tree; text is set per node type below. -->
+        <!-- A slim left accent bar instead of a filled pill — reads as a metadata tag next to
+             a data-tree entry rather than a SaaS status chip. -->
         <Style x:Key="NodeBadgeBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource AccentMutedBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="4,1" />
-            <Setter Property="MinWidth" Value="20" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="Padding" Value="4,0,0,0" />
+            <Setter Property="MinWidth" Value="30" />
             <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
         <Style x:Key="NodeBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource AppMonoFontFamily}" />
             <Setter Property="FontSize" Value="9" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
 
         <HierarchicalDataTemplate DataType="{x:Type vm:TreeNodeViewModel}" ItemsSource="{Binding Children}">
@@ -120,9 +122,30 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Database Explorer" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,16" />
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Database Explorer" Style="{StaticResource TitleTextStyle}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                    ToolTip="Switch between light and dark. Your choice is remembered — the app never follows Windows' system theme.">
+                            <TextBlock Text="Dark"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,6,0"
+                                       Visibility="{Binding IsDarkMode, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            <TextBlock Text="Light"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,6,0"
+                                       Visibility="{Binding IsDarkMode, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}" />
+                            <ToggleButton Style="{StaticResource ThemeToggleSwitchStyle}"
+                                          IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Grid>
 
-                    <TextBlock Grid.Row="1" Text="PROVIDER" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,0,0,6" />
+                    <TextBlock Grid.Row="1" Text="Provider" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,0,0,6" />
                     <ComboBox Grid.Row="1" Margin="0,20,0,0"
                               ItemsSource="{Binding AvailableProviders}"
                               SelectedValuePath="Type"
@@ -135,7 +158,7 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <TextBlock Grid.Row="2" Text="SAVED CONNECTIONS" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBlock Grid.Row="2" Text="Saved connections" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
                     <Grid Grid.Row="2" Margin="0,42,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -155,7 +178,7 @@
                                 Command="{Binding DeleteSavedConnectionCommand}" />
                     </Grid>
 
-                    <TextBlock Grid.Row="3" Text="CONNECTION STRING" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBlock Grid.Row="3" Text="Connection string" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
                     <TextBox Grid.Row="3" Margin="0,42,0,0"
                              Style="{StaticResource WatermarkTextBoxStyle}"
                              Text="{Binding ConnectionString, UpdateSourceTrigger=PropertyChanged}"
@@ -195,7 +218,7 @@
                                 Command="{Binding StartScanCommand}" />
                     </Grid>
 
-                    <TextBlock Grid.Row="7" Text="ROW LIMIT" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBlock Grid.Row="7" Text="Row limit" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
                     <ComboBox Grid.Row="7" Margin="0,36,0,0"
                               ToolTip="Caps how many rows are loaded when browsing a table or view. Use &quot;Load All&quot; in the grid to bypass this for a single load."
                               ItemsSource="{Binding RowLimitOptions}"
@@ -212,7 +235,7 @@
 
                     <Border Grid.Row="9" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,10" />
 
-                    <TextBlock Grid.Row="9" Text="DATABASE OBJECTS" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,20,0,6" />
+                    <TextBlock Grid.Row="9" Text="Database objects" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,20,0,6" />
 
                     <TreeView Grid.Row="10" Margin="0,8,0,0"
                               x:Name="ObjectTree"

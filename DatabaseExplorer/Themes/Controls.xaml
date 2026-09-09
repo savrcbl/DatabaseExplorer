@@ -5,11 +5,24 @@
          Typography & spacing constants
          ============================================================================ -->
 
-    <FontFamily x:Key="AppFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <!--
+        Bahnschrift ships with Windows 10 1709+ but is rarely reached for — most WPF/WinUI
+        apps default to "Segoe UI Variable", which is why so many of them look alike. Its
+        condensed, engineered letterforms read as a purpose-built tool rather than a generic
+        Windows dashboard. Body/chrome text uses the regular width; the app title uses the
+        SemiCondensed SemiBold instance for a distinct, denser display treatment — two
+        deliberately different weights/widths from one family, not just a size bump.
+        Data itself (grid cells, the query editor) stays on a monospace face, since tabular
+        alignment matters more there than personality.
+    -->
+    <FontFamily x:Key="AppFontFamily">Bahnschrift, Segoe UI</FontFamily>
+    <FontFamily x:Key="AppDisplayFontFamily">Bahnschrift SemiCondensed SemiBold, Bahnschrift SemiBold, Bahnschrift, Segoe UI</FontFamily>
     <FontFamily x:Key="AppMonoFontFamily">Cascadia Mono, Consolas, Segoe UI</FontFamily>
 
-    <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
-    <CornerRadius x:Key="PanelCornerRadius">10</CornerRadius>
+    <!-- Sharper, more precise geometry than the rounded "SaaS card" default — a deliberate
+         choice for a data tool that should feel engineered rather than soft. -->
+    <CornerRadius x:Key="ControlCornerRadius">2</CornerRadius>
+    <CornerRadius x:Key="PanelCornerRadius">3</CornerRadius>
     <Thickness x:Key="ControlPadding">10,7</Thickness>
     <Thickness x:Key="SectionMargin">16</Thickness>
 
@@ -23,10 +36,13 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
+    <!-- Nav-panel section labels (Provider, Saved connections, ...). Sentence case, not
+         tracked-out ALL CAPS — the accent color and weight are what mark these as labels,
+         not letter-spacing tricks. -->
     <Style x:Key="SectionHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <Style x:Key="CaptionTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
@@ -34,9 +50,12 @@
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     </Style>
 
+    <!-- App title / empty-state heading: the one place that uses the condensed display cut
+         of the chrome typeface, so it reads as a distinct, denser treatment rather than the
+         body font simply made bigger. -->
     <Style x:Key="TitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
-        <Setter Property="FontSize" Value="16" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontFamily" Value="{StaticResource AppDisplayFontFamily}" />
+        <Setter Property="FontSize" Value="19" />
     </Style>
 
     <!-- ============================================================================
@@ -614,6 +633,50 @@
     <Style TargetType="CheckBox">
         <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- ============================================================================
+         Theme toggle switch
+         A deliberate on/off control for Light/Dark — there is no "Auto" state, so the choice
+         a person makes here is the one the app keeps until they flip it again.
+         ============================================================================ -->
+
+    <Style x:Key="ThemeToggleSwitchStyle" TargetType="ToggleButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <Border x:Name="Track"
+                                CornerRadius="10"
+                                Background="{DynamicResource ButtonSecondaryBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush2}"
+                                BorderThickness="1" />
+                        <Border x:Name="Thumb"
+                                Width="14" Height="14"
+                                CornerRadius="7"
+                                Background="{DynamicResource TextTertiaryBrush}"
+                                HorizontalAlignment="Left"
+                                Margin="3,0,0,0">
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="ThumbOffset" X="0" />
+                            </Border.RenderTransform>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource TextOnAccentBrush}" />
+                            <Setter TargetName="ThumbOffset" Property="X" Value="20" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>

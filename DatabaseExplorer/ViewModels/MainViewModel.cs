@@ -20,6 +20,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly IExportService _exportService;
     private readonly IDialogService _dialogService;
     private readonly IConnectionProfileStore _profileStore;
+    private readonly IThemeService _themeService;
 
     private IDatabaseConnection? _connection;
     private CancellationTokenSource? _selectionLoadCts;
@@ -28,12 +29,14 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         IDatabaseProviderFactory providerFactory,
         IExportService exportService,
         IDialogService dialogService,
-        IConnectionProfileStore profileStore)
+        IConnectionProfileStore profileStore,
+        IThemeService themeService)
     {
         _providerFactory = providerFactory;
         _exportService = exportService;
         _dialogService = dialogService;
         _profileStore = profileStore;
+        _themeService = themeService;
 
         foreach (var provider in providerFactory.GetAllProviders())
         {
@@ -42,9 +45,29 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
         _selectedProviderType = AvailableProviders.Count > 0 ? AvailableProviders[0].Type : DatabaseProviderType.SqlServer;
         _selectedRowLimit = RowLimitOptions[1];
+        _isDarkMode = _themeService.CurrentTheme is AppTheme.Dark;
+
+        _themeService.ThemeChanged += OnThemeServiceThemeChanged;
 
         _ = LoadSavedConnectionsAsync();
     }
+
+    // ----- Theme -------------------------------------------------------------------------
+
+    [ObservableProperty]
+    private bool _isDarkMode;
+
+    partial void OnIsDarkModeChanged(bool value)
+    {
+        var target = value ? AppTheme.Dark : AppTheme.Light;
+        if (_themeService.CurrentTheme != target)
+        {
+            _themeService.ApplyTheme(target);
+        }
+    }
+
+    private void OnThemeServiceThemeChanged(object? sender, AppTheme theme) =>
+        IsDarkMode = theme is AppTheme.Dark;
 
     // ----- Navigation panel state -----------------------------------------------------
 
@@ -967,6 +990,8 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _themeService.ThemeChanged -= OnThemeServiceThemeChanged;
+
         if (_selectionLoadCts is not null)
         {
             _selectionLoadCts.Cancel();
