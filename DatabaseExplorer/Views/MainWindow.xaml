@@ -230,9 +230,6 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <ProgressBar Grid.Row="8" Margin="0,14,0,0" IsIndeterminate="True"
-                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
-
                     <Border Grid.Row="9" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,10" />
 
                     <TextBlock Grid.Row="9" Text="Database objects" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,20,0,6" />
