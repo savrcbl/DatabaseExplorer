@@ -1,1 +1,0 @@
-This is just a read me placeholder-  -- - -- this is will be change once the application was done 
