@@ -178,7 +178,7 @@
                                 Command="{Binding DeleteSavedConnectionCommand}" />
                     </Grid>
 
-                    <TextBlock Grid.Row="3" Text="Connection string" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBlock Grid.Row="3" Text="{Binding ConnectionSectionLabel}" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
                     <TextBox Grid.Row="3" Margin="0,42,0,0"
                              Style="{StaticResource WatermarkTextBoxStyle}"
                              Text="{Binding ConnectionString, UpdateSourceTrigger=PropertyChanged}"
@@ -186,7 +186,28 @@
                              IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
                              AcceptsReturn="False"
                              TextWrapping="NoWrap"
-                             VerticalScrollBarVisibility="Disabled" />
+                             VerticalScrollBarVisibility="Disabled"
+                             Visibility="{Binding IsSupabaseSelected, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}" />
+
+                    <StackPanel Grid.Row="3" Margin="0,42,0,0"
+                                Visibility="{Binding IsSupabaseSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBox Style="{StaticResource WatermarkTextBoxStyle}"
+                                 Text="{Binding SupabaseUrl, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="https://YOUR_PROJECT.supabase.co"
+                                 IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                                 AcceptsReturn="False"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Disabled" />
+                        <TextBox Margin="0,8,0,0"
+                                 Style="{StaticResource WatermarkTextBoxStyle}"
+                                 Text="{Binding SupabaseApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="Publishable key (sb_publishable_...)"
+                                 ToolTip="Settings &gt; API Keys in your Supabase dashboard. The publishable key is safe to use here; the secret key also works but only paste it if this machine is trusted."
+                                 IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                                 AcceptsReturn="False"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Disabled" />
+                    </StackPanel>
 
                     <Button Grid.Row="4" Content="Save Connection..." Style="{StaticResource SecondaryButtonStyle}"
                             Margin="0,8,0,0" HorizontalAlignment="Left" Padding="10,6"

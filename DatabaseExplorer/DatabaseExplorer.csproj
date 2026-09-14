@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -29,7 +29,12 @@
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="Supabase" Version="8.1.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DataProviders\Supabase\" />
   </ItemGroup>
 
 </Project>

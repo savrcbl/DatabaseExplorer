@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using DatabaseExplorer.Core.Exceptions;
 using DatabaseExplorer.Core.Interfaces;
 using DatabaseExplorer.Core.Models;
+using DatabaseExplorer.DataProviders.Supabase;
 using DatabaseExplorer.Helpers;
 
 namespace DatabaseExplorer.ViewModels;
@@ -81,6 +82,25 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public string ConnectionStringPlaceholder =>
         _providerFactory.GetProvider(SelectedProviderType).ConnectionStringPlaceholder;
+
+    public bool IsSupabaseSelected => SelectedProviderType == DatabaseProviderType.Supabase;
+
+    public string ConnectionSectionLabel => IsSupabaseSelected ? "Supabase project" : "Connection string";
+
+    public string SupabaseUrl
+    {
+        get => SupabaseConnectionInfo.ParseLenient(ConnectionString).Url;
+        set => ConnectionString = ComposeSupabaseConnectionString(value, SupabaseApiKey);
+    }
+
+    public string SupabaseApiKey
+    {
+        get => SupabaseConnectionInfo.ParseLenient(ConnectionString).ApiKey;
+        set => ConnectionString = ComposeSupabaseConnectionString(SupabaseUrl, value);
+    }
+
+    private static string ComposeSupabaseConnectionString(string url, string apiKey) =>
+        $"Url={url};ApiKey={apiKey};";
 
     public ObservableCollection<TreeNodeViewModel> TreeNodes { get; } = new ObservableCollection<TreeNodeViewModel>();
 
@@ -168,13 +188,19 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     // ----- Property change hooks (keep computed state & command availability in sync) --
 
-    partial void OnSelectedProviderTypeChanged(DatabaseProviderType value) =>
+    partial void OnSelectedProviderTypeChanged(DatabaseProviderType value)
+    {
         OnPropertyChanged(nameof(ConnectionStringPlaceholder));
+        OnPropertyChanged(nameof(IsSupabaseSelected));
+        OnPropertyChanged(nameof(ConnectionSectionLabel));
+    }
 
     partial void OnConnectionStringChanged(string value)
     {
         ConnectCommand.NotifyCanExecuteChanged();
         SaveConnectionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(SupabaseUrl));
+        OnPropertyChanged(nameof(SupabaseApiKey));
     }
 
     partial void OnIsBusyChanged(bool value) => RefreshCommandStates();
