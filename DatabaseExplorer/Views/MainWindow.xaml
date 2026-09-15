@@ -178,7 +178,7 @@
                                 Command="{Binding DeleteSavedConnectionCommand}" />
                     </Grid>
 
-                    <TextBlock Grid.Row="3" Text="Connection string" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBlock Grid.Row="3" Text="{Binding ConnectionSectionLabel}" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,16,0,6" />
                     <TextBox Grid.Row="3" Margin="0,42,0,0"
                              Style="{StaticResource WatermarkTextBoxStyle}"
                              Text="{Binding ConnectionString, UpdateSourceTrigger=PropertyChanged}"
@@ -186,7 +186,34 @@
                              IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
                              AcceptsReturn="False"
                              TextWrapping="NoWrap"
-                             VerticalScrollBarVisibility="Disabled" />
+                             VerticalScrollBarVisibility="Disabled"
+                             Visibility="{Binding IsSupabaseSelected, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}" />
+
+                    <StackPanel Grid.Row="3" Margin="0,42,0,0"
+                                Visibility="{Binding IsSupabaseSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBox Style="{StaticResource WatermarkTextBoxStyle}"
+                                 Text="{Binding SupabaseUrl, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="https://YOUR_PROJECT.supabase.co"
+                                 IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                                 AcceptsReturn="False"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Disabled" />
+                        <TextBox Margin="0,8,0,0"
+                                 Style="{StaticResource WatermarkTextBoxStyle}"
+                                 Text="{Binding SupabaseApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="Secret key required (sb_secret_...) — NOT the publishable key"
+                                 ToolTip="Settings &gt; API Keys &gt; Secret keys in your Supabase dashboard. The publishable key will connect but Supabase blocks it from listing tables/columns — this box needs the secret key."
+                                 IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                                 AcceptsReturn="False"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Disabled" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Text="{Binding SupabaseKeyWarning}"
+                                   FontSize="11"
+                                   Foreground="#D9534F"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding HasSupabaseKeyWarning, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    </StackPanel>
 
                     <Button Grid.Row="4" Content="Save Connection..." Style="{StaticResource SecondaryButtonStyle}"
                             Margin="0,8,0,0" HorizontalAlignment="Left" Padding="10,6"
@@ -314,7 +341,7 @@
 
                         <TextBox Grid.Row="0"
                                  Style="{StaticResource WatermarkTextBoxStyle}"
-                                 Tag="Type a SQL statement, e.g. SELECT * FROM ..."
+                                 Tag="{Binding QueryEditorPlaceholder}"
                                  Text="{Binding QueryText, UpdateSourceTrigger=PropertyChanged}"
                                  FontFamily="{DynamicResource AppMonoFontFamily}"
                                  AcceptsReturn="True"
@@ -328,7 +355,7 @@
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
                             <Button Content="Run Query  (Ctrl+Enter)" Style="{StaticResource PrimaryButtonStyle}"
                                     Command="{Binding RunQueryCommand}" />
-                            <TextBlock Text="SELECT statements populate the grid below; INSERT/UPDATE/DELETE/DDL statements report the number of rows affected."
+                            <TextBlock Text="{Binding QueryEditorHint}"
                                        Style="{StaticResource CaptionTextStyle}"
                                        VerticalAlignment="Center"
                                        Margin="12,0,0,0"

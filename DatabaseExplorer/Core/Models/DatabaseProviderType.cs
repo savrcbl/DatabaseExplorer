@@ -4,5 +4,6 @@ public enum DatabaseProviderType
 {
     SqlServer,
     PostgreSql,
-    Sqlite
+    Sqlite,
+    Supabase
 }

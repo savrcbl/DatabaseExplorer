@@ -6,6 +6,7 @@ using DatabaseExplorer.Database;
 using DatabaseExplorer.DataProviders.PostgreSql;
 using DatabaseExplorer.DataProviders.Sqlite;
 using DatabaseExplorer.DataProviders.SqlServer;
+using DatabaseExplorer.DataProviders.Supabase;
 using DatabaseExplorer.Services;
 using DatabaseExplorer.ViewModels;
 using DatabaseExplorer.Views;
@@ -45,6 +46,7 @@ public partial class App : Application
         services.AddSingleton<IDatabaseProvider, SqlServerDatabaseProvider>();
         services.AddSingleton<IDatabaseProvider, PostgreSqlDatabaseProvider>();
         services.AddSingleton<IDatabaseProvider, SqliteDatabaseProvider>();
+        services.AddSingleton<IDatabaseProvider, SupabaseDatabaseProvider>();
         services.AddSingleton<IDatabaseProviderFactory, DatabaseProviderFactory>();
 
         services.AddSingleton<IThemeService, ThemeService>();
