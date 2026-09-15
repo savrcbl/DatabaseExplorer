@@ -122,9 +122,92 @@ public sealed class SupabaseQueryService : IDatabaseQueryService
         }
     }
 
-    public Task<QueryResult> ExecuteQueryAsync(string sql, IProgress<string>? progress, CancellationToken cancellationToken = default) =>
-        throw new DatabaseQueryException(
-            "Supabase REST connections don't support raw SQL. Expose a Postgres function (RPC) instead — it will show up under Procedures.");
+    public async Task<QueryResult> ExecuteQueryAsync(string queryText, IProgress<string>? progress, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var (functionName, paramsJson) = ParseRpcInput(queryText);
+
+        try
+        {
+            progress?.Report($"Calling {functionName}...");
+
+            using var content = new StringContent(paramsJson, System.Text.Encoding.UTF8, "application/json");
+            using var response = await _connection.HttpClient.PostAsync($"rest/v1/rpc/{functionName}", content, cancellationToken).ConfigureAwait(false);
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new DatabaseQueryException(ExtractPostgrestErrorMessage(body, response.StatusCode, functionName));
+            }
+
+            var table = string.IsNullOrWhiteSpace(body)
+                ? new DataTable(functionName)
+                : BuildDataTableFromJson(functionName, body);
+
+            stopwatch.Stop();
+            progress?.Report($"{functionName} returned {table.Rows.Count:N0} row(s).");
+
+            return new QueryResult { Data = table, SourceName = $"rpc/{functionName}", Elapsed = stopwatch.Elapsed };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (DatabaseQueryException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new DatabaseQueryException($"Could not call '{functionName}': {ex.Message}", ex);
+        }
+    }
+
+    private static (string FunctionName, string ParamsJson) ParseRpcInput(string input)
+    {
+        var trimmed = input.Trim();
+
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            throw new DatabaseQueryException(
+                "Supabase connections call Postgres functions here, not raw SQL. Enter a function name, e.g. my_function or my_function {\"arg\": 1} — see it listed under Procedures.");
+        }
+
+        var spaceIndex = trimmed.IndexOfAny(new[] { ' ', '\t', '\r', '\n' });
+        var functionName = spaceIndex < 0 ? trimmed : trimmed[..spaceIndex];
+        var rest = spaceIndex < 0 ? string.Empty : trimmed[(spaceIndex + 1)..].Trim();
+        var paramsJson = string.IsNullOrEmpty(rest) ? "{}" : rest;
+
+        try
+        {
+            using var _ = JsonDocument.Parse(paramsJson);
+        }
+        catch (JsonException)
+        {
+            throw new DatabaseQueryException(
+                $"The parameters after '{functionName}' must be valid JSON, e.g. {{\"arg\": 1}}.");
+        }
+
+        return (functionName, paramsJson);
+    }
+
+    private static string ExtractPostgrestErrorMessage(string body, System.Net.HttpStatusCode statusCode, string functionName)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("message", out var messageNode) && messageNode.ValueKind == JsonValueKind.String)
+            {
+                return $"'{functionName}' failed: {messageNode.GetString()}";
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return $"'{functionName}' failed with HTTP {(int)statusCode} {statusCode}.";
+    }
 
     public async Task<long> GetRowCountAsync(string schema, string objectName, CancellationToken cancellationToken = default)
     {
@@ -164,36 +247,66 @@ public sealed class SupabaseQueryService : IDatabaseQueryService
         }
     }
 
-    private static DataTable BuildDataTable(string tableName, string json)
+    private static DataTable BuildDataTable(string tableName, string json) =>
+        BuildDataTableFromJson(tableName, json);
+
+    private static DataTable BuildDataTableFromJson(string sourceName, string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            return BuildDataTableFromArray(sourceName, root);
+        }
+
+        var table = new DataTable(sourceName);
+
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in root.EnumerateObject())
+            {
+                table.Columns.Add(prop.Name, typeof(string));
+            }
+
+            var values = new object?[table.Columns.Count];
+            var i = 0;
+            foreach (var prop in root.EnumerateObject())
+            {
+                values[i++] = ValueToCell(prop.Value);
+            }
+
+            table.Rows.Add(values);
+            return table;
+        }
+
+        table.Columns.Add("result", typeof(string));
+        table.Rows.Add(root.ValueKind == JsonValueKind.Null ? DBNull.Value : (object)root.GetRawText());
+        return table;
+    }
+
+    private static DataTable BuildDataTableFromArray(string tableName, JsonElement arrayElement)
     {
         var table = new DataTable(tableName);
-        using var doc = JsonDocument.Parse(json);
 
-        if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+        if (arrayElement.GetArrayLength() == 0)
         {
             return table;
         }
 
-        foreach (var prop in doc.RootElement[0].EnumerateObject())
+        foreach (var prop in arrayElement[0].EnumerateObject())
         {
             table.Columns.Add(prop.Name, typeof(string));
         }
 
-        foreach (var row in doc.RootElement.EnumerateArray())
+        foreach (var row in arrayElement.EnumerateArray())
         {
             var values = new object?[table.Columns.Count];
             var i = 0;
 
             foreach (var prop in row.EnumerateObject())
             {
-                values[i++] = prop.Value.ValueKind switch
-                {
-                    JsonValueKind.Null => DBNull.Value,
-                    JsonValueKind.String => prop.Value.GetString(),
-                    JsonValueKind.True => "true",
-                    JsonValueKind.False => "false",
-                    _ => prop.Value.GetRawText()
-                };
+                values[i++] = ValueToCell(prop.Value);
             }
 
             table.Rows.Add(values);
@@ -201,4 +314,13 @@ public sealed class SupabaseQueryService : IDatabaseQueryService
 
         return table;
     }
+
+    private static object ValueToCell(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Null => DBNull.Value,
+        JsonValueKind.String => value.GetString() ?? string.Empty,
+        JsonValueKind.True => "true",
+        JsonValueKind.False => "false",
+        _ => value.GetRawText()
+    };
 }

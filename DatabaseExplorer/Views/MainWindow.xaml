@@ -341,7 +341,7 @@
 
                         <TextBox Grid.Row="0"
                                  Style="{StaticResource WatermarkTextBoxStyle}"
-                                 Tag="Type a SQL statement, e.g. SELECT * FROM ..."
+                                 Tag="{Binding QueryEditorPlaceholder}"
                                  Text="{Binding QueryText, UpdateSourceTrigger=PropertyChanged}"
                                  FontFamily="{DynamicResource AppMonoFontFamily}"
                                  AcceptsReturn="True"
@@ -355,7 +355,7 @@
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
                             <Button Content="Run Query  (Ctrl+Enter)" Style="{StaticResource PrimaryButtonStyle}"
                                     Command="{Binding RunQueryCommand}" />
-                            <TextBlock Text="SELECT statements populate the grid below; INSERT/UPDATE/DELETE/DDL statements report the number of rows affected."
+                            <TextBlock Text="{Binding QueryEditorHint}"
                                        Style="{StaticResource CaptionTextStyle}"
                                        VerticalAlignment="Center"
                                        Margin="12,0,0,0"

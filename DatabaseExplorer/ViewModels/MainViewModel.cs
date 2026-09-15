@@ -87,6 +87,14 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public string ConnectionSectionLabel => IsSupabaseSelected ? "Supabase project" : "Connection string";
 
+    public string QueryEditorPlaceholder => IsSupabaseSelected
+        ? "Call a Postgres function, e.g. my_function or my_function {\"arg\": 1}"
+        : "Type a SQL statement, e.g. SELECT * FROM ...";
+
+    public string QueryEditorHint => IsSupabaseSelected
+        ? "Supabase connections run over REST, so this calls a Postgres function (RPC) by name — see it listed under Procedures — not raw SQL."
+        : "SELECT statements populate the grid below; INSERT/UPDATE/DELETE/DDL statements report the number of rows affected.";
+
     public string SupabaseUrl
     {
         get => SupabaseConnectionInfo.ParseLenient(ConnectionString).Url;
@@ -199,6 +207,8 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         OnPropertyChanged(nameof(ConnectionStringPlaceholder));
         OnPropertyChanged(nameof(IsSupabaseSelected));
         OnPropertyChanged(nameof(ConnectionSectionLabel));
+        OnPropertyChanged(nameof(QueryEditorPlaceholder));
+        OnPropertyChanged(nameof(QueryEditorHint));
     }
 
     partial void OnConnectionStringChanged(string value)
