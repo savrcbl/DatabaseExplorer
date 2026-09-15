@@ -10,7 +10,7 @@ public sealed class SupabaseDatabaseProvider : IDatabaseProvider
     public string DisplayName => "Supabase";
 
     public string ConnectionStringPlaceholder =>
-        "Url=https://YOUR_PROJECT.supabase.co;ApiKey=YOUR_PUBLISHABLE_KEY;";
+        "Url=https://YOUR_PROJECT.supabase.co;ApiKey=YOUR_SECRET_KEY;";
 
     public IDatabaseConnection CreateConnection(string connectionString) =>
         new SupabaseDatabaseConnection(connectionString);

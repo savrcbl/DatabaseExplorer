@@ -99,6 +99,12 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         set => ConnectionString = ComposeSupabaseConnectionString(SupabaseUrl, value);
     }
 
+    public bool HasSupabaseKeyWarning =>
+        SupabaseApiKey.StartsWith("sb_publishable_", StringComparison.OrdinalIgnoreCase);
+
+    public string SupabaseKeyWarning =>
+        "This looks like a publishable/anon key. Supabase requires the secret key here to list tables — Settings > API Keys > Secret keys.";
+
     private static string ComposeSupabaseConnectionString(string url, string apiKey) =>
         $"Url={url};ApiKey={apiKey};";
 
@@ -201,6 +207,7 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
         SaveConnectionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SupabaseUrl));
         OnPropertyChanged(nameof(SupabaseApiKey));
+        OnPropertyChanged(nameof(HasSupabaseKeyWarning));
     }
 
     partial void OnIsBusyChanged(bool value) => RefreshCommandStates();

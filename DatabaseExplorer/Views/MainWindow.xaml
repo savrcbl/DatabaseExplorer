@@ -201,12 +201,18 @@
                         <TextBox Margin="0,8,0,0"
                                  Style="{StaticResource WatermarkTextBoxStyle}"
                                  Text="{Binding SupabaseApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                 Tag="Publishable key (sb_publishable_...)"
-                                 ToolTip="Settings &gt; API Keys in your Supabase dashboard. The publishable key is safe to use here; the secret key also works but only paste it if this machine is trusted."
+                                 Tag="Secret key required (sb_secret_...) — NOT the publishable key"
+                                 ToolTip="Settings &gt; API Keys &gt; Secret keys in your Supabase dashboard. The publishable key will connect but Supabase blocks it from listing tables/columns — this box needs the secret key."
                                  IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBooleanConverter}}"
                                  AcceptsReturn="False"
                                  TextWrapping="NoWrap"
                                  VerticalScrollBarVisibility="Disabled" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Text="{Binding SupabaseKeyWarning}"
+                                   FontSize="11"
+                                   Foreground="#D9534F"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding HasSupabaseKeyWarning, Converter={StaticResource BoolToVisibilityConverter}}" />
                     </StackPanel>
 
                     <Button Grid.Row="4" Content="Save Connection..." Style="{StaticResource SecondaryButtonStyle}"
