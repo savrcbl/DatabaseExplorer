@@ -19,6 +19,7 @@
     <Product>Database Explorer</Product>
     <AssemblyTitle>Database Explorer</AssemblyTitle>
     <Description>A modern, multi-engine database browsing and export tool.</Description>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,10 +32,6 @@
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Supabase" Version="8.1.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="DataProviders\Supabase\" />
   </ItemGroup>
 
 </Project>
