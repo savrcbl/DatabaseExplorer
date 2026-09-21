@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using DatabaseExplorer.Core.Exceptions;
 using DatabaseExplorer.Core.Interfaces;
 using DatabaseExplorer.Core.Models;
+using DatabaseExplorer.DataProviders.Supabase;
 using DatabaseExplorer.Helpers;
 
 namespace DatabaseExplorer.ViewModels;
@@ -81,6 +82,39 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     public string ConnectionStringPlaceholder =>
         _providerFactory.GetProvider(SelectedProviderType).ConnectionStringPlaceholder;
+
+    public bool IsSupabaseSelected => SelectedProviderType == DatabaseProviderType.Supabase;
+
+    public string ConnectionSectionLabel => IsSupabaseSelected ? "Supabase project" : "Connection string";
+
+    public string QueryEditorPlaceholder => IsSupabaseSelected
+        ? "Call a Postgres function, e.g. my_function or my_function {\"arg\": 1}"
+        : "Type a SQL statement, e.g. SELECT * FROM ...";
+
+    public string QueryEditorHint => IsSupabaseSelected
+        ? "Supabase connections run over REST, so this calls a Postgres function (RPC) by name — see it listed under Procedures — not raw SQL."
+        : "SELECT statements populate the grid below; INSERT/UPDATE/DELETE/DDL statements report the number of rows affected.";
+
+    public string SupabaseUrl
+    {
+        get => SupabaseConnectionInfo.ParseLenient(ConnectionString).Url;
+        set => ConnectionString = ComposeSupabaseConnectionString(value, SupabaseApiKey);
+    }
+
+    public string SupabaseApiKey
+    {
+        get => SupabaseConnectionInfo.ParseLenient(ConnectionString).ApiKey;
+        set => ConnectionString = ComposeSupabaseConnectionString(SupabaseUrl, value);
+    }
+
+    public bool HasSupabaseKeyWarning =>
+        SupabaseApiKey.StartsWith("sb_publishable_", StringComparison.OrdinalIgnoreCase);
+
+    public string SupabaseKeyWarning =>
+        "This looks like a publishable/anon key. Supabase requires the secret key here to list tables — Settings > API Keys > Secret keys.";
+
+    private static string ComposeSupabaseConnectionString(string url, string apiKey) =>
+        $"Url={url};ApiKey={apiKey};";
 
     public ObservableCollection<TreeNodeViewModel> TreeNodes { get; } = new ObservableCollection<TreeNodeViewModel>();
 
@@ -168,13 +202,22 @@ public sealed partial class MainViewModel : ObservableObject, IAsyncDisposable
 
     // ----- Property change hooks (keep computed state & command availability in sync) --
 
-    partial void OnSelectedProviderTypeChanged(DatabaseProviderType value) =>
+    partial void OnSelectedProviderTypeChanged(DatabaseProviderType value)
+    {
         OnPropertyChanged(nameof(ConnectionStringPlaceholder));
+        OnPropertyChanged(nameof(IsSupabaseSelected));
+        OnPropertyChanged(nameof(ConnectionSectionLabel));
+        OnPropertyChanged(nameof(QueryEditorPlaceholder));
+        OnPropertyChanged(nameof(QueryEditorHint));
+    }
 
     partial void OnConnectionStringChanged(string value)
     {
         ConnectCommand.NotifyCanExecuteChanged();
         SaveConnectionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(SupabaseUrl));
+        OnPropertyChanged(nameof(SupabaseApiKey));
+        OnPropertyChanged(nameof(HasSupabaseKeyWarning));
     }
 
     partial void OnIsBusyChanged(bool value) => RefreshCommandStates();
